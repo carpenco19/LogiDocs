@@ -1,0 +1,236 @@
+{
+  "version": 3,
+  "targets": {
+    "net9.0": {
+      "Microsoft.AspNetCore.OpenApi/9.0.1": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.OpenApi": "1.6.17"
+        },
+        "compile": {
+          "lib/net9.0/Microsoft.AspNetCore.OpenApi.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.AspNetCore.OpenApi.dll": {
+            "related": ".xml"
+          }
+        },
+        "frameworkReferences": [
+          "Microsoft.AspNetCore.App"
+        ]
+      },
+      "Microsoft.OpenApi/1.6.17": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.0/Microsoft.OpenApi.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.OpenApi.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "LogiDocs.Application/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "LogiDocs.Contracts": "1.0.0",
+          "LogiDocs.Domain": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/LogiDocs.Application.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/LogiDocs.Application.dll": {}
+        }
+      },
+      "LogiDocs.Contracts/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "compile": {
+          "bin/placeholder/LogiDocs.Contracts.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/LogiDocs.Contracts.dll": {}
+        }
+      },
+      "LogiDocs.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "compile": {
+          "bin/placeholder/LogiDocs.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/LogiDocs.Domain.dll": {}
+        }
+      },
+      "LogiDocs.Infrastructure/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "LogiDocs.Application": "1.0.0",
+          "LogiDocs.Domain": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/LogiDocs.Infrastructure.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/LogiDocs.Infrastructure.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Microsoft.AspNetCore.OpenApi/9.0.1": {
+      "sha512": "xRJe8UrLnOGs6hOBrT/4r74q97626H0mABb/DV0smlReIx6uQCENAe+TUqF6hD3NtT4sB+qrvWhAej6kxPxgew==",
+      "type": "package",
+      "path": "microsoft.aspnetcore.openapi/9.0.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "PACKAGE.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net9.0/Microsoft.AspNetCore.OpenApi.dll",
+        "lib/net9.0/Microsoft.AspNetCore.OpenApi.xml",
+        "microsoft.aspnetcore.openapi.9.0.1.nupkg.sha512",
+        "microsoft.aspnetcore.openapi.nuspec"
+      ]
+    },
+    "Microsoft.OpenApi/1.6.17": {
+      "sha512": "Le+kehlmrlQfuDFUt1zZ2dVwrhFQtKREdKBo+rexOwaCoYP0/qpgT9tLxCsZjsgR5Itk1UKPcbgO+FyaNid/bA==",
+      "type": "package",
+      "path": "microsoft.openapi/1.6.17",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/netstandard2.0/Microsoft.OpenApi.dll",
+        "lib/netstandard2.0/Microsoft.OpenApi.pdb",
+        "lib/netstandard2.0/Microsoft.OpenApi.xml",
+        "microsoft.openapi.1.6.17.nupkg.sha512",
+        "microsoft.openapi.nuspec"
+      ]
+    },
+    "LogiDocs.Application/1.0.0": {
+      "type": "project",
+      "path": "../LogiDocs.Application/LogiDocs.Application.csproj",
+      "msbuildProject": "../LogiDocs.Application/LogiDocs.Application.csproj"
+    },
+    "LogiDocs.Contracts/1.0.0": {
+      "type": "project",
+      "path": "../../shared/LogiDocs.Contracts/LogiDocs.Contracts.csproj",
+      "msbuildProject": "../../shared/LogiDocs.Contracts/LogiDocs.Contracts.csproj"
+    },
+    "LogiDocs.Domain/1.0.0": {
+      "type": "project",
+      "path": "../LogiDocs.Domain/LogiDocs.Domain.csproj",
+      "msbuildProject": "../LogiDocs.Domain/LogiDocs.Domain.csproj"
+    },
+    "LogiDocs.Infrastructure/1.0.0": {
+      "type": "project",
+      "path": "../LogiDocs.Infrastructure/LogiDocs.Infrastructure.csproj",
+      "msbuildProject": "../LogiDocs.Infrastructure/LogiDocs.Infrastructure.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net9.0": [
+      "LogiDocs.Application >= 1.0.0",
+      "LogiDocs.Contracts >= 1.0.0",
+      "LogiDocs.Infrastructure >= 1.0.0",
+      "Microsoft.AspNetCore.OpenApi >= 9.0.1"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\37369\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "D:\\Anul-4\\LogiDocs\\src\\backend\\LogiDocs.Api\\LogiDocs.Api.csproj",
+      "projectName": "LogiDocs.Api",
+      "projectPath": "D:\\Anul-4\\LogiDocs\\src\\backend\\LogiDocs.Api\\LogiDocs.Api.csproj",
+      "packagesPath": "C:\\Users\\37369\\.nuget\\packages\\",
+      "outputPath": "D:\\Anul-4\\LogiDocs\\src\\backend\\LogiDocs.Api\\obj\\",
+      "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
+      "configFilePaths": [
+        "C:\\Users\\37369\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "net9.0"
+      ],
+      "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "projectReferences": {
+            "D:\\Anul-4\\LogiDocs\\src\\backend\\LogiDocs.Application\\LogiDocs.Application.csproj": {
+              "projectPath": "D:\\Anul-4\\LogiDocs\\src\\backend\\LogiDocs.Application\\LogiDocs.Application.csproj"
+            },
+            "D:\\Anul-4\\LogiDocs\\src\\backend\\LogiDocs.Infrastructure\\LogiDocs.Infrastructure.csproj": {
+              "projectPath": "D:\\Anul-4\\LogiDocs\\src\\backend\\LogiDocs.Infrastructure\\LogiDocs.Infrastructure.csproj"
+            },
+            "D:\\Anul-4\\LogiDocs\\src\\shared\\LogiDocs.Contracts\\LogiDocs.Contracts.csproj": {
+              "projectPath": "D:\\Anul-4\\LogiDocs\\src\\shared\\LogiDocs.Contracts\\LogiDocs.Contracts.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "9.0.100"
+    },
+    "frameworks": {
+      "net9.0": {
+        "targetAlias": "net9.0",
+        "dependencies": {
+          "Microsoft.AspNetCore.OpenApi": {
+            "target": "Package",
+            "version": "[9.0.1, )"
+          }
+        },
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.AspNetCore.App": {
+            "privateAssets": "none"
+          },
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.102/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "Qjz814tDBLE=",
+  "success": true,
+  "projectFilePath": "D:\\Anul-4\\LogiDocs\\src\\backend\\LogiDocs.Api\\LogiDocs.Api.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\37369\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.1\\microsoft.aspnetcore.openapi.9.0.1.nupkg.sha512",
+    "C:\\Users\\37369\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}

@@ -1,0 +1,11 @@
+D:\Anul-4\LogiDocs\src\shared\LogiDocs.Contracts\bin\Debug\net9.0\LogiDocs.Contracts.deps.json
+D:\Anul-4\LogiDocs\src\shared\LogiDocs.Contracts\bin\Debug\net9.0\LogiDocs.Contracts.dll
+D:\Anul-4\LogiDocs\src\shared\LogiDocs.Contracts\bin\Debug\net9.0\LogiDocs.Contracts.pdb
+D:\Anul-4\LogiDocs\src\shared\LogiDocs.Contracts\obj\Debug\net9.0\LogiDocs.Contracts.GeneratedMSBuildEditorConfig.editorconfig
+D:\Anul-4\LogiDocs\src\shared\LogiDocs.Contracts\obj\Debug\net9.0\LogiDocs.Contracts.AssemblyInfoInputs.cache
+D:\Anul-4\LogiDocs\src\shared\LogiDocs.Contracts\obj\Debug\net9.0\LogiDocs.Contracts.AssemblyInfo.cs
+D:\Anul-4\LogiDocs\src\shared\LogiDocs.Contracts\obj\Debug\net9.0\LogiDocs.Contracts.csproj.CoreCompileInputs.cache
+D:\Anul-4\LogiDocs\src\shared\LogiDocs.Contracts\obj\Debug\net9.0\LogiDocs.Contracts.dll
+D:\Anul-4\LogiDocs\src\shared\LogiDocs.Contracts\obj\Debug\net9.0\refint\LogiDocs.Contracts.dll
+D:\Anul-4\LogiDocs\src\shared\LogiDocs.Contracts\obj\Debug\net9.0\LogiDocs.Contracts.pdb
+D:\Anul-4\LogiDocs\src\shared\LogiDocs.Contracts\obj\Debug\net9.0\ref\LogiDocs.Contracts.dll

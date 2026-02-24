@@ -1,0 +1,11 @@
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Domain\bin\Debug\net9.0\LogiDocs.Domain.deps.json
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Domain\bin\Debug\net9.0\LogiDocs.Domain.dll
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Domain\bin\Debug\net9.0\LogiDocs.Domain.pdb
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Domain\obj\Debug\net9.0\LogiDocs.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Domain\obj\Debug\net9.0\LogiDocs.Domain.AssemblyInfoInputs.cache
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Domain\obj\Debug\net9.0\LogiDocs.Domain.AssemblyInfo.cs
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Domain\obj\Debug\net9.0\LogiDocs.Domain.csproj.CoreCompileInputs.cache
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Domain\obj\Debug\net9.0\LogiDocs.Domain.dll
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Domain\obj\Debug\net9.0\refint\LogiDocs.Domain.dll
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Domain\obj\Debug\net9.0\LogiDocs.Domain.pdb
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Domain\obj\Debug\net9.0\ref\LogiDocs.Domain.dll

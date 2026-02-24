@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v9.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v9.0": {
+      "LogiDocs.Web/1.0.0": {
+        "dependencies": {
+          "LogiDocs.Contracts": "1.0.0"
+        },
+        "runtime": {
+          "LogiDocs.Web.dll": {}
+        }
+      },
+      "LogiDocs.Contracts/1.0.0": {
+        "runtime": {
+          "LogiDocs.Contracts.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "LogiDocs.Web/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "LogiDocs.Contracts/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

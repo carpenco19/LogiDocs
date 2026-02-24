@@ -1,0 +1,53 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v9.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v9.0": {
+      "LogiDocs.Application/1.0.0": {
+        "dependencies": {
+          "LogiDocs.Contracts": "1.0.0",
+          "LogiDocs.Domain": "1.0.0"
+        },
+        "runtime": {
+          "LogiDocs.Application.dll": {}
+        }
+      },
+      "LogiDocs.Contracts/1.0.0": {
+        "runtime": {
+          "LogiDocs.Contracts.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "LogiDocs.Domain/1.0.0": {
+        "runtime": {
+          "LogiDocs.Domain.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "LogiDocs.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "LogiDocs.Contracts/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "LogiDocs.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

@@ -1,0 +1,17 @@
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\bin\Debug\net9.0\LogiDocs.Application.deps.json
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\bin\Debug\net9.0\LogiDocs.Application.dll
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\bin\Debug\net9.0\LogiDocs.Application.pdb
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\bin\Debug\net9.0\LogiDocs.Contracts.dll
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\bin\Debug\net9.0\LogiDocs.Domain.dll
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\bin\Debug\net9.0\LogiDocs.Domain.pdb
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\bin\Debug\net9.0\LogiDocs.Contracts.pdb
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\obj\Debug\net9.0\LogiDocs.Application.csproj.AssemblyReference.cache
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\obj\Debug\net9.0\LogiDocs.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\obj\Debug\net9.0\LogiDocs.Application.AssemblyInfoInputs.cache
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\obj\Debug\net9.0\LogiDocs.Application.AssemblyInfo.cs
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\obj\Debug\net9.0\LogiDocs.Application.csproj.CoreCompileInputs.cache
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\obj\Debug\net9.0\LogiDocs.E5D5E5AA.Up2Date
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\obj\Debug\net9.0\LogiDocs.Application.dll
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\obj\Debug\net9.0\refint\LogiDocs.Application.dll
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\obj\Debug\net9.0\LogiDocs.Application.pdb
+D:\Anul-4\LogiDocs\src\backend\LogiDocs.Application\obj\Debug\net9.0\ref\LogiDocs.Application.dll

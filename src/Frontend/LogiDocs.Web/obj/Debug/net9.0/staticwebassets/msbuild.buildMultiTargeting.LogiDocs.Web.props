@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\LogiDocs.Web.props" />
+</Project>
