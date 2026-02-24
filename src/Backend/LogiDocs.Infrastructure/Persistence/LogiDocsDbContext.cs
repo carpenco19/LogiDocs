@@ -1,14 +1,22 @@
-﻿using LogiDocs.Domain.Entities;
+﻿using LogiDocs.Application.Abstractions;
+using LogiDocs.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace LogiDocs.Infrastructure.Persistence;
 
-public sealed class LogiDocsDbContext : DbContext
+public sealed class LogiDocsDbContext : DbContext, ILogiDocsDbContext
 {
     public LogiDocsDbContext(DbContextOptions<LogiDocsDbContext> options) : base(options) { }
 
-    public DbSet<Transport> Transports => Set<Transport>();
-    public DbSet<Document> Documents => Set<Document>();
+    // IQueryable pentru Application (fără DbSet în interfață)
+    public IQueryable<Transport> Transports => Set<Transport>();
+    public IQueryable<Document> Documents => Set<Document>();
+
+    // Metodă generică pentru add (folosită din Application)
+    public void Add<T>(T entity) where T : class
+    {
+        Set<T>().Add(entity);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
