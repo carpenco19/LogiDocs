@@ -13,7 +13,7 @@ public sealed class LogiDocsDbContext : DbContext, ILogiDocsDbContext
     public IQueryable<Document> Documents => Set<Document>();
 
     // Metodă generică pentru add (folosită din Application)
-    public void Add<T>(T entity) where T : class
+    public new  void Add<T>(T entity) where T : class
     {
         Set<T>().Add(entity);
     }
