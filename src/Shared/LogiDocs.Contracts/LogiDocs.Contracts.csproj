@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\backend\LogiDocs.Domain\LogiDocs.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

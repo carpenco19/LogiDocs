@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\..\shared\LogiDocs.Contracts\LogiDocs.Contracts.csproj" />
     <ProjectReference Include="..\LogiDocs.Domain\LogiDocs.Domain.csproj" />
     <ProjectReference Include="..\LogiDocs.Application\LogiDocs.Application.csproj" />
   </ItemGroup>
