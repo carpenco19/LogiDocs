@@ -8,5 +8,7 @@ public interface IDocumentStorage
         Stream content,
         CancellationToken ct);
 
+    Task<Stream> OpenReadAsync(string relativePath, CancellationToken ct);
+
     Task DeleteAsync(string relativePath, CancellationToken ct);
 }

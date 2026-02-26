@@ -26,21 +26,49 @@ public sealed class LocalDocumentStorage : IDocumentStorage
         var absoluteDir = Path.Combine(_rootPath, relativeDir);
         Directory.CreateDirectory(absoluteDir);
 
-        var relativePath = Path.Combine(relativeDir, storedFileName);
-        var absolutePath = Path.Combine(_rootPath, relativePath);
+        var relativePath = Path.Combine(relativeDir, storedFileName).Replace("\\", "/");
+        var absolutePath = Path.Combine(_rootPath, relativePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
 
         await using var fs = new FileStream(
-            absolutePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true);
+            absolutePath,
+            FileMode.CreateNew,
+            FileAccess.Write,
+            FileShare.None,
+            bufferSize: 81920,
+            useAsync: true);
 
-        content.Position = 0;
+        if (content.CanSeek) content.Position = 0;
         await content.CopyToAsync(fs, ct);
 
-        return (storedFileName, relativePath.Replace("\\", "/"));
+        return (storedFileName, relativePath);
+    }
+
+    public Task<Stream> OpenReadAsync(string relativePath, CancellationToken ct)
+    {
+        var absolutePath = Path.Combine(
+            _rootPath,
+            relativePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
+
+        if (!File.Exists(absolutePath))
+            throw new FileNotFoundException($"File not found: {absolutePath}");
+
+        Stream stream = new FileStream(
+            absolutePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            bufferSize: 81920,
+            useAsync: true);
+
+        return Task.FromResult(stream);
     }
 
     public Task DeleteAsync(string relativePath, CancellationToken ct)
     {
-        var abs = Path.Combine(_rootPath, relativePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
+        var abs = Path.Combine(
+            _rootPath,
+            relativePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
+
         if (File.Exists(abs)) File.Delete(abs);
         return Task.CompletedTask;
     }

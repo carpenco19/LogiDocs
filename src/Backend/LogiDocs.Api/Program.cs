@@ -1,50 +1,51 @@
 using LogiDocs.Application.Abstractions;
-using LogiDocs.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
-using LogiDocs.Application.Transports.Commands;
-using LogiDocs.Application.Transports.Queries;
 using LogiDocs.Application.Documents.Commands;
 using LogiDocs.Application.Documents.Queries;
-using LogiDocs.Infrastructure.Persistence.Storage; 
+using LogiDocs.Application.Transports.Commands;
+using LogiDocs.Application.Transports.Queries;
+using LogiDocs.Infrastructure.Persistence;
+using LogiDocs.Infrastructure.Persistence.Storage;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// ---------- Services ----------
-builder.Services.AddScoped<UploadDocumentUseCase>();
-builder.Services.AddScoped<GetDocumentsByTransportUseCase>();
+// ---------- Storage (local disk) ----------
+var storageRoot = Path.Combine(builder.Environment.ContentRootPath, "storage");
+builder.Services.AddSingleton<IDocumentStorage>(_ => new LocalDocumentStorage(storageRoot));
 
-builder.Services.AddSingleton<IDocumentStorage, LocalDocumentStorage>();
-
-// DbContext
+// ---------- DbContext ----------
 builder.Services.AddDbContext<LogiDocsDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("LogiDocs")));
 
-builder.Services.AddSingleton<IDocumentStorage>(_ =>
-    new LocalDocumentStorage(Path.Combine(builder.Environment.ContentRootPath, "storage")));
-// Leg?m interfa?a de implementare
+// leag? interfa?a de implementare
 builder.Services.AddScoped<ILogiDocsDbContext>(sp =>
     sp.GetRequiredService<LogiDocsDbContext>());
 
+// ---------- UseCases ----------
 builder.Services.AddScoped<CreateTransportUseCase>();
 builder.Services.AddScoped<GetTransportsUseCase>();
 
-// Controllers
+builder.Services.AddScoped<UploadDocumentUseCase>();
+builder.Services.AddScoped<GetDocumentsByTransportUseCase>();
+
+// ---------- Controllers ----------
 builder.Services.AddControllers();
 
-// OpenAPI
-builder.Services.AddOpenApi();
+// ---------- Swagger ----------
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// ---------- Middleware ----------
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
 
-// ---------- Endpoints ----------
 app.MapControllers();
 
 app.Run();
