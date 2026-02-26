@@ -1,9 +1,6 @@
-﻿using LogiDocs.Application.Abstractions;
-using LogiDocs.Application.Documents.Commands;
+﻿using LogiDocs.Application.Documents.Commands;
 using LogiDocs.Application.Documents.Queries;
-using LogiDocs.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace LogiDocs.Api.Controllers;
 
@@ -21,19 +18,16 @@ public sealed class DocumentsController : ControllerBase
 {
     private readonly UploadDocumentUseCase _uploadUseCase;
     private readonly GetDocumentsByTransportUseCase _getByTransport;
-    private readonly LogiDocsDbContext _db;
-    private readonly IDocumentStorage _storage;
+    private readonly DownloadDocumentUseCase _downloadUseCase;
 
     public DocumentsController(
         UploadDocumentUseCase uploadUseCase,
         GetDocumentsByTransportUseCase getByTransport,
-        LogiDocsDbContext db,
-        IDocumentStorage storage)
+        DownloadDocumentUseCase downloadUseCase)
     {
         _uploadUseCase = uploadUseCase;
         _getByTransport = getByTransport;
-        _db = db;
-        _storage = storage;
+        _downloadUseCase = downloadUseCase;
     }
 
     [HttpGet("by-transport/{transportId:guid}")]
@@ -46,24 +40,8 @@ public sealed class DocumentsController : ControllerBase
     [HttpGet("{documentId:guid}/download")]
     public async Task<IActionResult> Download(Guid documentId, CancellationToken ct)
     {
-        var doc = await _db.Documents
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == documentId, ct);
-
-        if (doc is null)
-            return NotFound();
-
-        var relativePath = doc.StoredRelativePath;
-        if (string.IsNullOrWhiteSpace(relativePath))
-            return Problem("StoredRelativePath is missing for this document.");
-
-        var stream = await _storage.OpenReadAsync(relativePath, ct);
-
-        var downloadName = string.IsNullOrWhiteSpace(doc.OriginalFileName)
-            ? $"{doc.Id}.bin"
-            : doc.OriginalFileName;
-
-        return File(stream, "application/octet-stream", downloadName);
+        var (stream, fileName) = await _downloadUseCase.ExecuteAsync(documentId, ct);
+        return File(stream, "application/octet-stream", fileName);
     }
 
     [HttpPost("upload")]

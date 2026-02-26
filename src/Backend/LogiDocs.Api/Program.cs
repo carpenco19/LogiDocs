@@ -28,6 +28,8 @@ builder.Services.AddScoped<GetTransportsUseCase>();
 builder.Services.AddScoped<UploadDocumentUseCase>();
 builder.Services.AddScoped<GetDocumentsByTransportUseCase>();
 
+builder.Services.AddScoped<DownloadDocumentUseCase>();
+
 // ---------- Controllers ----------
 builder.Services.AddControllers();
 
