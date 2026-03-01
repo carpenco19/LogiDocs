@@ -1,0 +1,44 @@
+﻿@page
+@model LogiDocs.Web.Pages.TransportsModel
+@{
+    ViewData["Title"] = "Transports";
+}
+
+<h2>Transporturi</h2>
+
+@if (Model.Error != null)
+{
+    <p style="color:red">@Model.Error</p>
+}
+else if (Model.Items == null || Model.Items.Count == 0)
+{
+    <p>Nu există transporturi.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Reference</th>
+                <th>Origin</th>
+                <th>Destination</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var t in Model.Items)
+            {
+                <tr>
+                    <td>
+                        <a asp-page="/TransportDetails" asp-route-id="@t.Id">
+                            @t.ReferenceNo
+                        </a>
+                    </td>
+                    <td>@t.Origin</td>
+                    <td>@t.Destination</td>
+                    <td>@t.Status</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

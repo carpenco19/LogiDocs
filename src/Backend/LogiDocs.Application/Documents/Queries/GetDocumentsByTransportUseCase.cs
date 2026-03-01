@@ -26,6 +26,9 @@ public sealed class GetDocumentsByTransportUseCase
                 OriginalFileName = d.OriginalFileName,
                 Sha256 = d.Sha256,
                 BlockchainTxId = d.BlockchainTxId,
+                ChainStatus = d.ChainStatus,
+                RegisteredOnChainAtUtc = d.RegisteredOnChainAtUtc,
+                ChainError = d.ChainError,
                 UploadedAtUtc = d.UploadedAtUtc,
                 UploadedByUserId = d.UploadedByUserId
             })

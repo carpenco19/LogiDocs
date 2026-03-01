@@ -1,6 +1,8 @@
 ﻿using LogiDocs.Application.Documents.Commands;
 using LogiDocs.Application.Documents.Queries;
 using Microsoft.AspNetCore.Mvc;
+using LogiDocs.Application.Abstractions;
+using Microsoft.EntityFrameworkCore;
 
 namespace LogiDocs.Api.Controllers;
 
@@ -19,15 +21,18 @@ public sealed class DocumentsController : ControllerBase
     private readonly UploadDocumentUseCase _uploadUseCase;
     private readonly GetDocumentsByTransportUseCase _getByTransport;
     private readonly DownloadDocumentUseCase _downloadUseCase;
+    private readonly ILogiDocsDbContext _db;
 
     public DocumentsController(
-        UploadDocumentUseCase uploadUseCase,
-        GetDocumentsByTransportUseCase getByTransport,
-        DownloadDocumentUseCase downloadUseCase)
+    UploadDocumentUseCase uploadUseCase,
+    GetDocumentsByTransportUseCase getByTransport,
+    DownloadDocumentUseCase downloadUseCase,
+    ILogiDocsDbContext db)
     {
         _uploadUseCase = uploadUseCase;
         _getByTransport = getByTransport;
         _downloadUseCase = downloadUseCase;
+        _db = db;
     }
 
     [HttpGet("by-transport/{transportId:guid}")]
@@ -62,5 +67,33 @@ public sealed class DocumentsController : ControllerBase
             ct);
 
         return Ok(new { documentId });
+    }
+    [HttpPost("{documentId:guid}/register-onchain")]
+    public async Task<IActionResult> RegisterOnChain(Guid documentId, CancellationToken ct)
+    {
+        var doc = await _db.Documents.FirstOrDefaultAsync(x => x.Id == documentId, ct);
+        if (doc == null)
+            return NotFound("Document not found.");
+
+        // 1) setăm Pending
+        doc.ChainStatus = "Pending";
+        doc.ChainError = null;
+        await _db.SaveChangesAsync(ct);
+
+        // 2) TEMP: simulăm înregistrarea pe blockchain
+        // (în pasul următor aici punem apelul real către Solana)
+        doc.BlockchainTxId = "SIMULATED_TX_" + Guid.NewGuid().ToString("N");
+        doc.ChainStatus = "Registered";
+        doc.RegisteredOnChainAtUtc = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(new
+        {
+            documentId = doc.Id,
+            chainStatus = doc.ChainStatus,
+            blockchainTxId = doc.BlockchainTxId,
+            registeredOnChainAtUtc = doc.RegisteredOnChainAtUtc
+        });
     }
 }

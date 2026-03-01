@@ -21,7 +21,12 @@ public sealed class Document
     public string Sha256 { get; set; } = string.Empty;
     public string? BlockchainTxId { get; set; } // tx pe Solana (mai târziu)
 
+    public DateTime? RegisteredOnChainAtUtc { get; set; } // când a fost confirmată pe chain
+    public string? ChainStatus { get; set; }              // "Pending", "Registered", "Failed"
+    public string? ChainError { get; set; }               // mesaj dacă tranzacția a eșuat
+
     public DateTime UploadedAtUtc { get; set; } = DateTime.UtcNow;
+
 
     // (opțional) - cine a încărcat documentul
     public Guid UploadedByUserId { get; set; }

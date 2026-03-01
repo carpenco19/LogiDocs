@@ -6,6 +6,7 @@ using LogiDocs.Application.Transports.Queries;
 using LogiDocs.Infrastructure.Persistence;
 using LogiDocs.Infrastructure.Persistence.Storage;
 using Microsoft.EntityFrameworkCore;
+using LogiDocs.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,9 @@ builder.Services.AddScoped<UploadDocumentUseCase>();
 builder.Services.AddScoped<GetDocumentsByTransportUseCase>();
 
 builder.Services.AddScoped<DownloadDocumentUseCase>();
+
+// ----------  ----------
+builder.Services.AddInfrastructure(builder.Configuration);
 
 // ---------- Controllers ----------
 builder.Services.AddControllers();
