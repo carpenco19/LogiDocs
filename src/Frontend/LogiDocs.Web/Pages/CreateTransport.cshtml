@@ -1,0 +1,35 @@
+﻿@page
+@model LogiDocs.Web.Pages.CreateTransportModel
+
+@{
+    ViewData["Title"] = "Adaugă transport";
+}
+
+<h2>Adaugă transport</h2>
+
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+    <p style="color:red">@Model.Error</p>
+}
+
+<form method="post">
+    <div>
+        <label>Reference</label><br />
+        <input asp-for="Input.ReferenceNo" />
+    </div>
+
+    <div style="margin-top:10px">
+        <label>Origin</label><br />
+        <input asp-for="Input.Origin" />
+    </div>
+
+    <div style="margin-top:10px">
+        <label>Destination</label><br />
+        <input asp-for="Input.Destination" />
+    </div>
+
+    <div style="margin-top:15px">
+        <button type="submit">Salvează</button>
+        <a asp-page="/Transports" style="margin-left:10px">Înapoi</a>
+    </div>
+</form>

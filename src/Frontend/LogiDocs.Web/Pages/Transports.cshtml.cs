@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LogiDocs.Web.Pages;
 
+[Authorize]
 public class TransportsModel : PageModel
 {
     private readonly IHttpClientFactory _factory;

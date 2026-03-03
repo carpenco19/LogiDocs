@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
+using System.Security.Claims;
 
 namespace LogiDocs.Web.Pages;
 
@@ -13,7 +14,8 @@ public class TransportDetailsModel : PageModel
         _factory = factory;
     }
 
-    // route param: /TransportDetails/{id}
+    // route param: /TransportDetails?id={guid}
+    // (tu folosești asp-route-id, deci e ok SupportsGet)
     [BindProperty(SupportsGet = true)]
     public Guid Id { get; set; }
 
@@ -31,8 +33,7 @@ public class TransportDetailsModel : PageModel
     [BindProperty]
     public int Type { get; set; }
 
-    [BindProperty]
-    public Guid UploadedByUserId { get; set; }
+    
 
     // ---------- Register on chain (POST) ----------
     [BindProperty]
@@ -60,6 +61,15 @@ public class TransportDetailsModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        //  user id real din Identity
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+        {
+            Error = "User is not authenticated.";
+            await OnGetAsync();
+            return Page();
+        }
+
         // ---- Register document on chain ----
         if (RegisterDocumentId != Guid.Empty)
         {
@@ -107,14 +117,18 @@ public class TransportDetailsModel : PageModel
 
             content.Add(new StringContent(TransportId.ToString()), "TransportId");
             content.Add(new StringContent(Type.ToString()), "Type");
-            content.Add(new StringContent(UploadedByUserId.ToString()), "UploadedByUserId");
+
+            
+            content.Add(new StringContent(userId.ToString()), "UploadedByUserId");
 
             await using var stream = UploadFile.OpenReadStream();
             var fileContent = new StreamContent(stream);
 
             if (!string.IsNullOrWhiteSpace(UploadFile.ContentType))
+            {
                 fileContent.Headers.ContentType =
                     new System.Net.Http.Headers.MediaTypeHeaderValue(UploadFile.ContentType);
+            }
 
             content.Add(fileContent, "File", UploadFile.FileName);
 
