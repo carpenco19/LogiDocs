@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Authorization;
 
 namespace LogiDocs.Web.Pages;
 
-[Authorize]
-public class TransportsModel : PageModel
+[Authorize] // toți autentificați pot vedea lista
+public sealed class TransportsModel : PageModel
 {
     private readonly IHttpClientFactory _factory;
 
@@ -14,15 +14,15 @@ public class TransportsModel : PageModel
         _factory = factory;
     }
 
-    public List<TransportRow>? Items { get; set; }
     public string? Error { get; set; }
+    public List<TransportRow>? Items { get; set; }
 
     public async Task OnGetAsync()
     {
         try
         {
             var client = _factory.CreateClient("LogiDocsApi");
-            Items = await client.GetFromJsonAsync<List<TransportRow>>("api/Transports");
+            Items = await client.GetFromJsonAsync<List<TransportRow>>("api/transports");
         }
         catch (Exception ex)
         {

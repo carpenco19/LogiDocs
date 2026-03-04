@@ -5,24 +5,32 @@ using LogiDocs.Application.Transports.Commands;
 using LogiDocs.Application.Transports.Queries;
 using LogiDocs.Infrastructure.Persistence;
 using LogiDocs.Infrastructure.Persistence.Storage;
-using Microsoft.EntityFrameworkCore;
 using LogiDocs.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ---------- Storage (local disk) ----------
+
+// ---------------- STORAGE ----------------
+
 var storageRoot = Path.Combine(builder.Environment.ContentRootPath, "storage");
-builder.Services.AddSingleton<IDocumentStorage>(_ => new LocalDocumentStorage(storageRoot));
 
-// ---------- DbContext ----------
+builder.Services.AddSingleton<IDocumentStorage>(_ =>
+    new LocalDocumentStorage(storageRoot));
+
+
+// ---------------- DATABASE ----------------
+
 builder.Services.AddDbContext<LogiDocsDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("LogiDocs")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("LogiDocs")));
 
-// leag? interfa?a de implementare
 builder.Services.AddScoped<ILogiDocsDbContext>(sp =>
     sp.GetRequiredService<LogiDocsDbContext>());
 
-// ---------- UseCases ----------
+
+// ---------------- USE CASES ----------------
+
 builder.Services.AddScoped<CreateTransportUseCase>();
 builder.Services.AddScoped<GetTransportsUseCase>();
 
@@ -31,17 +39,29 @@ builder.Services.AddScoped<GetDocumentsByTransportUseCase>();
 
 builder.Services.AddScoped<DownloadDocumentUseCase>();
 
-// ----------  ----------
+
+// ---------------- INFRASTRUCTURE ----------------
+
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// ---------- Controllers ----------
+
+// ---------------- CONTROLLERS ----------------
+
 builder.Services.AddControllers();
 
-// ---------- Swagger ----------
+
+// ---------------- SWAGGER ----------------
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
+// ---------------- BUILD APP ----------------
+
 var app = builder.Build();
+
+
+// ---------------- DEVELOPMENT ----------------
 
 if (app.Environment.IsDevelopment())
 {
@@ -49,7 +69,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
+// ---------------- MIDDLEWARE ----------------
+
 app.UseHttpsRedirection();
+
 app.UseAuthorization();
 
 app.MapControllers();

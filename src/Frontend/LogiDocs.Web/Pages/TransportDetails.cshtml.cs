@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
 using System.Security.Claims;
 
 namespace LogiDocs.Web.Pages;
 
-public class TransportDetailsModel : PageModel
+[Authorize] // doar utilizatori autentificați
+public sealed class TransportDetailsModel : PageModel
 {
     private readonly IHttpClientFactory _factory;
 
@@ -14,30 +16,31 @@ public class TransportDetailsModel : PageModel
         _factory = factory;
     }
 
-    // route param: /TransportDetails?id={guid}
-    // (tu folosești asp-route-id, deci e ok SupportsGet)
+    // route param: /TransportDetails/{id}
     [BindProperty(SupportsGet = true)]
     public Guid Id { get; set; }
 
     public string? Error { get; set; }
     public string? TransportRef { get; set; }
-    public List<DocumentRow>? Documents { get; set; }
+    public List<DocumentRow> Documents { get; set; } = new();
 
-    // ---------- Upload form (POST) ----------
+    // ---------- Upload form ----------
     [BindProperty]
     public IFormFile? UploadFile { get; set; }
 
     [BindProperty]
-    public Guid TransportId { get; set; }
+    public int Type { get; set; } // tip document (int)
 
-    [BindProperty]
-    public int Type { get; set; }
-
-    
-
-    // ---------- Register on chain (POST) ----------
+    // ---------- Register form ----------
     [BindProperty]
     public Guid RegisterDocumentId { get; set; }
+
+    // Helpers pentru UI (buton visibility)
+    public bool CanUpload =>
+        User.IsInRole("Shipper") || User.IsInRole("Carrier");
+
+    public bool CanRegister =>
+        User.IsInRole("CustomsBroker") || User.IsInRole("Administrator");
 
     public async Task OnGetAsync()
     {
@@ -45,13 +48,14 @@ public class TransportDetailsModel : PageModel
         {
             var client = _factory.CreateClient("LogiDocsApi");
 
-            // 1) Transport reference (quick MVP)
-            var transports = await client.GetFromJsonAsync<List<TransportRow>>("api/Transports");
+            // Transport reference (MVP)
+            var transports = await client.GetFromJsonAsync<List<TransportRow>>("api/transports");
             var t = transports?.FirstOrDefault(x => x.Id == Id);
             TransportRef = t?.ReferenceNo ?? "Unknown";
 
-            // 2) Documents for transport
-            Documents = await client.GetFromJsonAsync<List<DocumentRow>>($"api/Documents/by-transport/{Id}");
+            // Documents for transport
+            var docs = await client.GetFromJsonAsync<List<DocumentRow>>($"api/documents/by-transport/{Id}");
+            Documents = docs ?? new List<DocumentRow>();
         }
         catch (Exception ex)
         {
@@ -59,67 +63,33 @@ public class TransportDetailsModel : PageModel
         }
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostUploadAsync()
     {
-        //  user id real din Identity
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
-        {
-            Error = "User is not authenticated.";
-            await OnGetAsync();
-            return Page();
-        }
+        if (!CanUpload)
+            return Forbid();
 
-        // ---- Register document on chain ----
-        if (RegisterDocumentId != Guid.Empty)
-        {
-            try
-            {
-                var client = _factory.CreateClient("LogiDocsApi");
-
-                var resp = await client.PostAsync($"api/Documents/{RegisterDocumentId}/register-onchain", null);
-
-                if (!resp.IsSuccessStatusCode)
-                {
-                    var body = await resp.Content.ReadAsStringAsync();
-                    Error = $"Blockchain error: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
-                    await OnGetAsync();
-                    return Page();
-                }
-
-                return RedirectToPage(new { id = Id });
-            }
-            catch (Exception ex)
-            {
-                Error = ex.Message;
-                await OnGetAsync();
-                return Page();
-            }
-        }
-
-        // ---- Upload document ----
         try
         {
             var client = _factory.CreateClient("LogiDocsApi");
 
-            // fallback if hidden TransportId is missing
-            if (TransportId == Guid.Empty)
-                TransportId = Id;
-
             if (UploadFile == null || UploadFile.Length == 0)
             {
-                Error = "File is required.";
+                Error = "Fișierul este obligatoriu.";
+                await OnGetAsync();
+                return Page();
+            }
+
+            if (Id == Guid.Empty)
+            {
+                Error = "Transport invalid.";
                 await OnGetAsync();
                 return Page();
             }
 
             using var content = new MultipartFormDataContent();
 
-            content.Add(new StringContent(TransportId.ToString()), "TransportId");
+            content.Add(new StringContent(Id.ToString()), "TransportId");
             content.Add(new StringContent(Type.ToString()), "Type");
-
-            
-            content.Add(new StringContent(userId.ToString()), "UploadedByUserId");
 
             await using var stream = UploadFile.OpenReadStream();
             var fileContent = new StreamContent(stream);
@@ -132,7 +102,7 @@ public class TransportDetailsModel : PageModel
 
             content.Add(fileContent, "File", UploadFile.FileName);
 
-            var resp = await client.PostAsync("api/Documents/upload", content);
+            var resp = await client.PostAsync("api/documents/upload", content);
 
             if (!resp.IsSuccessStatusCode)
             {
@@ -142,7 +112,43 @@ public class TransportDetailsModel : PageModel
                 return Page();
             }
 
-            return RedirectToPage(new { id = TransportId });
+            return RedirectToPage(new { id = Id });
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+            await OnGetAsync();
+            return Page();
+        }
+    }
+
+    public async Task<IActionResult> OnPostRegisterAsync()
+    {
+        if (!CanRegister)
+            return Forbid();
+
+        if (RegisterDocumentId == Guid.Empty)
+        {
+            Error = "Document invalid.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        try
+        {
+            var client = _factory.CreateClient("LogiDocsApi");
+
+            var resp = await client.PostAsync($"api/documents/{RegisterDocumentId}/register-onchain", null);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                Error = $"Register failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
+                await OnGetAsync();
+                return Page();
+            }
+
+            return RedirectToPage(new { id = Id });
         }
         catch (Exception ex)
         {

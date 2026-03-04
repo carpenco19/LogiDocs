@@ -1,12 +1,21 @@
 using LogiDocs.Web.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHttpClient("LogiDocsApi", client =>
+builder.Services.AddHttpClient("LogiDocsApi", c =>
 {
-    client.BaseAddress = new Uri("http://localhost:5006/");
+    c.BaseAddress = new Uri("http://localhost:5006/");
+})
+.ConfigurePrimaryHttpMessageHandler(() =>
+{
+    return new HttpClientHandler
+    {
+        UseCookies = true,
+        CookieContainer = new CookieContainer()
+    };
 });
 
 // Add services to the container.

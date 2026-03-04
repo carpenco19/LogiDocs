@@ -1,7 +1,8 @@
-﻿using LogiDocs.Application.Documents.Commands;
+﻿using LogiDocs.Application.Abstractions;
+using LogiDocs.Application.Documents.Commands;
 using LogiDocs.Application.Documents.Queries;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using LogiDocs.Application.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
 namespace LogiDocs.Api.Controllers;
@@ -10,7 +11,7 @@ public sealed class UploadDocumentForm
 {
     public Guid TransportId { get; set; }
     public int Type { get; set; }
-    public Guid UploadedByUserId { get; set; }
+    public Guid UploadedByUserId { get; set; } // vine din Web (Identity)
     public IFormFile File { get; set; } = default!;
 }
 
@@ -24,10 +25,10 @@ public sealed class DocumentsController : ControllerBase
     private readonly ILogiDocsDbContext _db;
 
     public DocumentsController(
-    UploadDocumentUseCase uploadUseCase,
-    GetDocumentsByTransportUseCase getByTransport,
-    DownloadDocumentUseCase downloadUseCase,
-    ILogiDocsDbContext db)
+        UploadDocumentUseCase uploadUseCase,
+        GetDocumentsByTransportUseCase getByTransport,
+        DownloadDocumentUseCase downloadUseCase,
+        ILogiDocsDbContext db)
     {
         _uploadUseCase = uploadUseCase;
         _getByTransport = getByTransport;
@@ -49,12 +50,19 @@ public sealed class DocumentsController : ControllerBase
         return File(stream, "application/octet-stream", fileName);
     }
 
+    // MVP: API nu are login/claims. Deci nu folosim User aici.
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Upload([FromForm] UploadDocumentForm form, CancellationToken ct)
     {
         if (form.File == null || form.File.Length == 0)
             return BadRequest("File is required.");
+
+        if (form.TransportId == Guid.Empty)
+            return BadRequest("TransportId is required.");
+
+        if (form.UploadedByUserId == Guid.Empty)
+            return BadRequest("UploadedByUserId is required.");
 
         await using var stream = form.File.OpenReadStream();
 
@@ -68,6 +76,7 @@ public sealed class DocumentsController : ControllerBase
 
         return Ok(new { documentId });
     }
+
     [HttpPost("{documentId:guid}/register-onchain")]
     public async Task<IActionResult> RegisterOnChain(Guid documentId, CancellationToken ct)
     {
@@ -75,13 +84,11 @@ public sealed class DocumentsController : ControllerBase
         if (doc == null)
             return NotFound("Document not found.");
 
-        // 1) setăm Pending
         doc.ChainStatus = "Pending";
         doc.ChainError = null;
         await _db.SaveChangesAsync(ct);
 
-        // 2) TEMP: simulăm înregistrarea pe blockchain
-        // (în pasul următor aici punem apelul real către Solana)
+        // TEMP: simulăm blockchain
         doc.BlockchainTxId = "SIMULATED_TX_" + Guid.NewGuid().ToString("N");
         doc.ChainStatus = "Registered";
         doc.RegisteredOnChainAtUtc = DateTime.UtcNow;

@@ -1,14 +1,15 @@
-﻿@page
+﻿@page "{id:guid}"
 @model LogiDocs.Web.Pages.TransportDetailsModel
+
 @{
     ViewData["Title"] = "Transport Details";
 }
 
 <h2>Transport Details</h2>
 
-<div>
-    <strong>Transport:</strong> @(Model.TransportRef ?? "Unknown")
-</div>
+<p>
+    <strong>Transport:</strong> @Model.TransportRef
+</p>
 
 <hr />
 
@@ -17,102 +18,138 @@
     <p style="color:red">@Model.Error</p>
 }
 
-@if (User.IsInRole("Shipper") || User.IsInRole("Carrier"))
+@if (!User.Identity!.IsAuthenticated)
 {
-    <h3>Upload New Document</h3>
-
-    <form method="post" enctype="multipart/form-data">
-        <input type="hidden" asp-for="TransportId" value="@Model.Id" />
-
-        <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
-            <div>
-                <label>File</label><br />
-                <input type="file" asp-for="UploadFile" />
-            </div>
-
-            <div>
-                <label>Document Type</label><br />
-                <select asp-for="Type" style="min-width:180px;">
-                    <option value="0">CMR</option>
-                    <option value="1">Invoice</option>
-                    <option value="2">PackingList</option>
-                    <option value="3">CustomsDeclaration</option>
-                </select>
-            </div>
-
-            <div>
-                <button type="submit">Upload</button>
-            </div>
-        </div>
-    </form>
-
-    <hr />
-}
-
-<h3>Documents</h3>
-
-@if (Model.Documents == null || Model.Documents.Count == 0)
-{
-    <p>No documents for this transport.</p>
+    <p style="color:#b00">
+        Nu ești autentificat. Te rog mergi la
+        <a href="/Identity/Account/Login">Login</a>.
+    </p>
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>File Name</th>
-                <th>Type</th>
-                <th>Hash</th>
-                <th>Blockchain</th>
-                <th>Tx</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var d in Model.Documents)
-            {
-                var isRegistered = !string.IsNullOrWhiteSpace(d.BlockchainTxId);
+    @* ---------- UPLOAD ---------- *@
 
+    @if (Model.CanUpload)
+    {
+        <h4>Upload New Document</h4>
+
+        <form method="post"
+              enctype="multipart/form-data"
+              asp-page-handler="Upload">
+
+            <div class="row g-2 align-items-end">
+
+                <div class="col-md-4">
+                    <label class="form-label">File</label>
+                    <input class="form-control" type="file" asp-for="UploadFile" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Document Type</label>
+                    <select class="form-select" asp-for="Type">
+                        <option value="0">CMR</option>
+                        <option value="1">Invoice</option>
+                        <option value="2">PackingList</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success">
+                        Upload
+                    </button>
+                </div>
+
+            </div>
+        </form>
+
+        <hr />
+    }
+
+    <h4>Documents</h4>
+
+    @if (Model.Documents == null || Model.Documents.Count == 0)
+    {
+        <p>No documents for this transport.</p>
+    }
+    else
+    {
+        <table class="table table-striped">
+
+            <thead>
                 <tr>
-                    <td>@d.OriginalFileName</td>
-                    <td>@d.Type</td>
-
-                    <td style="max-width:420px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                        @d.Sha256
-                    </td>
-
-                    <td>
-                        @if (isRegistered)
-                        {
-                            <span style="padding:2px 6px; background:#198754; color:white; border-radius:4px;">
-                                Registered
-                            </span>
-                        }
-                        else
-                        {
-                            <span style="padding:2px 6px; background:#6c757d; color:white; border-radius:4px;">
-                                Not registered
-                            </span>
-                        }
-                    </td>
-
-                    <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                        @(isRegistered ? d.BlockchainTxId : "-")
-                    </td>
-
-                    <td style="white-space:nowrap;">
-                        <a class="btn btn-sm btn-primary" href="/api/Documents/@d.Id/download">Download</a>
-
-                        @if (!isRegistered && (User.IsInRole("CustomsBroker") || User.IsInRole("Administrator")))
-                        {
-                            <form method="post" style="display:inline;">
-                                <input type="hidden" asp-for="RegisterDocumentId" value="@d.Id" />
-                                <button class="btn btn-sm btn-success" type="submit">Register</button>
-                            </form>
-                        }
-                    </td>
+                    <th>File Name</th>
+                    <th>Type</th>
+                    <th>Hash</th>
+                    <th>Blockchain</th>
+                    <th>Tx</th>
+                    <th>Actions</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+
+            <tbody>
+
+                @foreach (var d in Model.Documents)
+                {
+                    var registered = string.Equals(d.ChainStatus, "Registered",
+                    StringComparison.OrdinalIgnoreCase);
+
+                    <tr>
+
+                        <td>@d.OriginalFileName</td>
+
+                        <td>@d.Type</td>
+
+                        <td style="max-width:380px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            @d.Sha256
+                        </td>
+
+                        <td>
+                            @if (registered)
+                            {
+                                <span class="badge bg-success">Registered</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Not registered</span>
+                            }
+                        </td>
+
+                        <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            @(string.IsNullOrWhiteSpace(d.BlockchainTxId) ? "-" : d.BlockchainTxId)
+                        </td>
+
+                        <td>
+
+                            <a class="btn btn-primary btn-sm"
+                               href="http://localhost:5006/api/documents/@d.Id/download">
+                                Download
+                            </a>
+
+                            @if (Model.CanRegister && !registered)
+                            {
+                                <form method="post"
+                                      asp-page-handler="Register"
+                                      style="display:inline">
+
+                                    <input type="hidden"
+                                           asp-for="RegisterDocumentId"
+                                           value="@d.Id" />
+
+                                    <button type="submit"
+                                            class="btn btn-success btn-sm">
+                                        Register
+                                    </button>
+
+                                </form>
+                            }
+
+                        </td>
+
+                    </tr>
+                }
+
+            </tbody>
+
+        </table>
+    }
 }

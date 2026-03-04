@@ -1,35 +1,39 @@
 ﻿@page
 @model LogiDocs.Web.Pages.CreateTransportModel
-
 @{
-    ViewData["Title"] = "Adaugă transport";
+    ViewData["Title"] = "Add shipping";
 }
 
 <h2>Adaugă transport</h2>
 
-@if (!string.IsNullOrEmpty(Model.Error))
+@if (Model.Error != null)
 {
     <p style="color:red">@Model.Error</p>
 }
 
 <form method="post">
-    <div>
-        <label>Reference</label><br />
-        <input asp-for="Input.ReferenceNo" />
+    <div class="mb-3">
+        <label class="form-label">Reference</label>
+        <input class="form-control" asp-for="Input.ReferenceNo" />
+        <span class="text-danger" asp-validation-for="Input.ReferenceNo"></span>
     </div>
 
-    <div style="margin-top:10px">
-        <label>Origin</label><br />
-        <input asp-for="Input.Origin" />
+    <div class="mb-3">
+        <label class="form-label">Origin</label>
+        <input class="form-control" asp-for="Input.Origin" />
+        <span class="text-danger" asp-validation-for="Input.Origin"></span>
     </div>
 
-    <div style="margin-top:10px">
-        <label>Destination</label><br />
-        <input asp-for="Input.Destination" />
+    <div class="mb-3">
+        <label class="form-label">Destination</label>
+        <input class="form-control" asp-for="Input.Destination" />
+        <span class="text-danger" asp-validation-for="Input.Destination"></span>
     </div>
 
-    <div style="margin-top:15px">
-        <button type="submit">Salvează</button>
-        <a asp-page="/Transports" style="margin-left:10px">Înapoi</a>
-    </div>
+    <button class="btn btn-primary" type="submit">Salvează</button>
+    <a class="btn btn-secondary" asp-page="/Transports">Înapoi</a>
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
