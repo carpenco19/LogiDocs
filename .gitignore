@@ -10,3 +10,6 @@
 # secrets / local config
 appsettings.Development.json
 *.pfx
+
+# Storage files (uploaded documents)
+src/Backend/LogiDocs.Api/storage/
