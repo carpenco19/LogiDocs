@@ -1,5 +1,6 @@
 ﻿using LogiDocs.Application.Abstractions;
 using LogiDocs.Contracts.Transports;
+using LogiDocs.Domain.Enums;
 
 namespace LogiDocs.Application.Transports.Queries;
 
@@ -14,7 +15,6 @@ public sealed class GetTransportsUseCase
 
     public Task<List<TransportDto>> ExecuteAsync(CancellationToken ct = default)
     {
-        
         var items = _db.Transports
             .OrderByDescending(x => x.CreatedAtUtc)
             .Select(x => new TransportDto
@@ -24,7 +24,9 @@ public sealed class GetTransportsUseCase
                 Origin = x.Origin,
                 Destination = x.Destination,
                 CreatedAtUtc = x.CreatedAtUtc,
-                Status = (int)x.Status
+                Status = (int)x.Status,
+                DocumentsCount = x.Documents.Count(),
+                VerifiedDocuments = x.Documents.Count(d => d.Status == DocumentStatus.Verified)
             })
             .ToList();
 

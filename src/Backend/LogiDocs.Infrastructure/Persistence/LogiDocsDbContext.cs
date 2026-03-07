@@ -55,7 +55,17 @@ public sealed class LogiDocsDbContext : DbContext, ILogiDocsDbContext
             e.Property(x => x.Sha256).HasMaxLength(64).IsRequired();
             e.Property(x => x.BlockchainTxId).HasMaxLength(256);
 
+            e.Property(x => x.RegisteredOnChainAtUtc);
+           
+            e.Property(x => x.ChainStatus)
+                .HasConversion<string>()
+                .HasMaxLength(32);
+
+            e.Property(x => x.ChainError)
+                .HasMaxLength(1000);
+
             e.Property(x => x.UploadedAtUtc).IsRequired();
+            e.Property(x => x.UploadedByUserId).IsRequired();
 
             e.HasIndex(x => new { x.TransportId, x.Type });
         });

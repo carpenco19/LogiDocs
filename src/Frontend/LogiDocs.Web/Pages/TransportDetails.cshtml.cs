@@ -3,10 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
 using System.Security.Claims;
+using LogiDocs.Contracts.Documents;
 
 namespace LogiDocs.Web.Pages;
 
-[Authorize] // doar utilizatori autentificați
+[Authorize]
 public sealed class TransportDetailsModel : PageModel
 {
     private readonly IHttpClientFactory _factory;
@@ -16,7 +17,6 @@ public sealed class TransportDetailsModel : PageModel
         _factory = factory;
     }
 
-    // route param: /TransportDetails/{id}
     [BindProperty(SupportsGet = true)]
     public Guid Id { get; set; }
 
@@ -24,23 +24,39 @@ public sealed class TransportDetailsModel : PageModel
     public string? TransportRef { get; set; }
     public List<DocumentRow> Documents { get; set; } = new();
 
-    // ---------- Upload form ----------
     [BindProperty]
     public IFormFile? UploadFile { get; set; }
 
     [BindProperty]
-    public int Type { get; set; } // tip document (int)
+    public int Type { get; set; }
 
-    // ---------- Register form ----------
     [BindProperty]
     public Guid RegisterDocumentId { get; set; }
 
-    // Helpers pentru UI (buton visibility)
+    [BindProperty]
+    public Guid VerifyDocumentId { get; set; }
+
+    [BindProperty]
+    public Guid ValidateDocumentId { get; set; }
+
+    public DocumentVerificationDto? VerificationResult { get; set; }
+
     public bool CanUpload =>
-        User.IsInRole("Shipper") || User.IsInRole("Carrier");
+        User.IsInRole("Shipper") ||
+        User.IsInRole("Carrier") ||
+        User.IsInRole("Administrator");
 
     public bool CanRegister =>
-        User.IsInRole("CustomsBroker") || User.IsInRole("Administrator");
+        User.IsInRole("CustomsBroker") ||
+        User.IsInRole("Administrator");
+
+    public bool CanVerify =>
+        User.IsInRole("CustomsAuthority") ||
+        User.IsInRole("Administrator");
+
+    public bool CanValidate =>
+        User.IsInRole("CustomsAuthority") ||
+        User.IsInRole("Administrator");
 
     public async Task OnGetAsync()
     {
@@ -48,12 +64,11 @@ public sealed class TransportDetailsModel : PageModel
         {
             var client = _factory.CreateClient("LogiDocsApi");
 
-            // Transport reference (MVP)
             var transports = await client.GetFromJsonAsync<List<TransportRow>>("api/transports");
-            var t = transports?.FirstOrDefault(x => x.Id == Id);
-            TransportRef = t?.ReferenceNo ?? "Unknown";
+            var transport = transports?.FirstOrDefault(x => x.Id == Id);
 
-            // Documents for transport
+            TransportRef = transport?.ReferenceNo ?? "Unknown";
+
             var docs = await client.GetFromJsonAsync<List<DocumentRow>>($"api/documents/by-transport/{Id}");
             Documents = docs ?? new List<DocumentRow>();
         }
@@ -68,28 +83,37 @@ public sealed class TransportDetailsModel : PageModel
         if (!CanUpload)
             return Forbid();
 
+        if (Id == Guid.Empty)
+        {
+            Error = "Transport invalid.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        if (UploadFile == null || UploadFile.Length == 0)
+        {
+            Error = "Fișierul este obligatoriu.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+        {
+            Error = "Nu ești autentificat. Te rog fă login.";
+            await OnGetAsync();
+            return Page();
+        }
+
         try
         {
             var client = _factory.CreateClient("LogiDocsApi");
-
-            if (UploadFile == null || UploadFile.Length == 0)
-            {
-                Error = "Fișierul este obligatoriu.";
-                await OnGetAsync();
-                return Page();
-            }
-
-            if (Id == Guid.Empty)
-            {
-                Error = "Transport invalid.";
-                await OnGetAsync();
-                return Page();
-            }
 
             using var content = new MultipartFormDataContent();
 
             content.Add(new StringContent(Id.ToString()), "TransportId");
             content.Add(new StringContent(Type.ToString()), "Type");
+            content.Add(new StringContent(userId.ToString()), "UploadedByUserId");
 
             await using var stream = UploadFile.OpenReadStream();
             var fileContent = new StreamContent(stream);
@@ -158,7 +182,87 @@ public sealed class TransportDetailsModel : PageModel
         }
     }
 
-    // ---------- Local DTOs ----------
+    public async Task<IActionResult> OnPostVerifyAsync()
+    {
+        if (!CanVerify)
+            return Forbid();
+
+        if (VerifyDocumentId == Guid.Empty)
+        {
+            Error = "Document invalid.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        try
+        {
+            var client = _factory.CreateClient("LogiDocsApi");
+
+            var result = await client.GetFromJsonAsync<DocumentVerificationDto>(
+                $"api/documents/{VerifyDocumentId}/verify");
+
+            if (result == null)
+            {
+                Error = "Nu s-a putut obține rezultatul verificării.";
+                await OnGetAsync();
+                return Page();
+            }
+
+            VerificationResult = result;
+
+            var transports = await client.GetFromJsonAsync<List<TransportRow>>("api/transports");
+            var transport = transports?.FirstOrDefault(x => x.Id == Id);
+            TransportRef = transport?.ReferenceNo ?? "Unknown";
+
+            var docs = await client.GetFromJsonAsync<List<DocumentRow>>($"api/documents/by-transport/{Id}");
+            Documents = docs ?? new List<DocumentRow>();
+
+            return Page();
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+            await OnGetAsync();
+            return Page();
+        }
+    }
+
+    public async Task<IActionResult> OnPostValidateAsync()
+    {
+        if (!CanValidate)
+            return Forbid();
+
+        if (ValidateDocumentId == Guid.Empty)
+        {
+            Error = "Document invalid.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        try
+        {
+            var client = _factory.CreateClient("LogiDocsApi");
+
+            var resp = await client.PostAsync($"api/documents/{ValidateDocumentId}/validate", null);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                Error = $"Validate failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
+                await OnGetAsync();
+                return Page();
+            }
+
+            return RedirectToPage(new { id = Id });
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+            await OnGetAsync();
+            return Page();
+        }
+    }
+
     public sealed class TransportRow
     {
         public Guid Id { get; set; }
@@ -169,13 +273,29 @@ public sealed class TransportDetailsModel : PageModel
     {
         public Guid Id { get; set; }
         public int Type { get; set; }
+        public int Status { get; set; }
         public string? OriginalFileName { get; set; }
         public string? Sha256 { get; set; }
-
-        // blockchain
         public string? BlockchainTxId { get; set; }
         public string? ChainStatus { get; set; }
         public DateTime? RegisteredOnChainAtUtc { get; set; }
         public string? ChainError { get; set; }
+
+        public string TypeName => Type switch
+        {
+            0 => "CMR",
+            1 => "Invoice",
+            2 => "Packing List",
+            _ => "Other"
+        };
+
+        public string StatusName => Status switch
+        {
+            0 => "Uploaded",
+            1 => "Verified",
+            2 => "Tampered",
+            3 => "Rejected",
+            _ => "Unknown"
+        };
     }
 }

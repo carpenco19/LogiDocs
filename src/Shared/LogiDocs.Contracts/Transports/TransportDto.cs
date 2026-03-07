@@ -1,6 +1,4 @@
-﻿
-
-namespace LogiDocs.Contracts.Transports;
+﻿namespace LogiDocs.Contracts.Transports;
 
 public sealed class TransportDto
 {
@@ -10,4 +8,7 @@ public sealed class TransportDto
     public string Destination { get; set; } = string.Empty;
     public DateTime CreatedAtUtc { get; set; }
     public int Status { get; set; }
+
+    public int DocumentsCount { get; set; }
+    public int VerifiedDocuments { get; set; }
 }

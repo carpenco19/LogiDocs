@@ -1,6 +1,7 @@
 ﻿@page
 @model LogiDocs.Web.Pages.TransportsModel
 @using LogiDocs.Web.Auth
+
 @{
     ViewData["Title"] = "Transporturi";
 }
@@ -10,7 +11,7 @@
 @if (User.IsInRole(Roles.Carrier) || User.IsInRole(Roles.Administrator))
 {
     <p>
-        <a asp-page="/CreateTransport">Add shipping</a>
+        <a asp-page="/CreateTransport" class="btn btn-success btn-sm">Add shipping</a>
     </p>
 }
 
@@ -24,13 +25,16 @@ else if (Model.Items == null || Model.Items.Count == 0)
 }
 else
 {
-    <table class="table">
+    <table class="table table-striped align-middle">
         <thead>
             <tr>
                 <th>Reference</th>
                 <th>Origin</th>
                 <th>Destination</th>
                 <th>Status</th>
+                <th>Docs</th>
+                <th>Verified</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -38,11 +42,49 @@ else
             {
                 <tr>
                     <td>
-                        <a asp-page="/TransportDetails" asp-route-id="@t.Id">@t.ReferenceNo</a>
+                        <a asp-page="/TransportDetails" asp-route-id="@t.Id">
+                            @t.ReferenceNo
+                        </a>
                     </td>
+
                     <td>@t.Origin</td>
+
                     <td>@t.Destination</td>
-                    <td>@t.Status</td>
+
+                    <td>
+                        @if (t.Status == 0)
+                        {
+                            <span class="badge bg-secondary">Draft</span>
+                        }
+                        else if (t.Status == 1)
+                        {
+                            <span class="badge bg-warning text-dark">In Process</span>
+                        }
+                        else if (t.Status == 2)
+                        {
+                            <span class="badge bg-success">Completed</span>
+                        }
+                        else if (t.Status == 3)
+                        {
+                            <span class="badge bg-danger">Cancelled</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-dark">Unknown</span>
+                        }
+                    </td>
+
+                    <td>@t.DocumentsCount</td>
+
+                    <td>@t.VerifiedDocuments</td>
+
+                    <td>
+                        <a class="btn btn-primary btn-sm"
+                           asp-page="/TransportDetails"
+                           asp-route-id="@t.Id">
+                            Open
+                        </a>
+                    </td>
                 </tr>
             }
         </tbody>

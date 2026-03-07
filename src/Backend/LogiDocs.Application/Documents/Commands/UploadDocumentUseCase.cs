@@ -3,7 +3,6 @@ using LogiDocs.Application.Abstractions;
 using LogiDocs.Domain.Entities;
 using LogiDocs.Domain.Enums;
 
-
 namespace LogiDocs.Application.Documents.Commands;
 
 public sealed class UploadDocumentUseCase
@@ -19,31 +18,28 @@ public sealed class UploadDocumentUseCase
 
     public async Task<Guid> ExecuteAsync(
         Guid transportId,
-        int type,                 // vine din API
+        int type,
         Guid uploadedByUserId,
         Stream fileStream,
         string originalFileName,
         CancellationToken ct = default)
     {
-        var transportExists = _db.Transports.Any(x => x.Id == transportId);
-        if (!transportExists)
+        var transport = _db.Transports.FirstOrDefault(x => x.Id == transportId);
+        if (transport == null)
             throw new InvalidOperationException("Transport not found.");
 
-        // 1) SHA256
         fileStream.Position = 0;
         string sha256;
         using (var sha = SHA256.Create())
         {
             var hash = await sha.ComputeHashAsync(fileStream, ct);
-            sha256 = Convert.ToHexString(hash); // 64 chars
+            sha256 = Convert.ToHexString(hash);
         }
 
-        // 2) Save file
         fileStream.Position = 0;
         var (storedFileName, relativePath) = await _storage.SaveAsync(
             transportId, originalFileName, fileStream, ct);
 
-        // 3) Save DB row
         var doc = new Document
         {
             Id = Guid.NewGuid(),
@@ -60,6 +56,12 @@ public sealed class UploadDocumentUseCase
         };
 
         _db.Add(doc);
+
+        if (transport.Status == TransportStatus.Draft)
+        {
+            transport.Status = TransportStatus.InProcess;
+        }
+
         await _db.SaveChangesAsync(ct);
 
         return doc.Id;

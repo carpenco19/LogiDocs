@@ -22,7 +22,7 @@ public sealed class Document
     public string? BlockchainTxId { get; set; } // tx pe Solana (mai târziu)
 
     public DateTime? RegisteredOnChainAtUtc { get; set; } // când a fost confirmată pe chain
-    public string? ChainStatus { get; set; }              // "Pending", "Registered", "Failed"
+    public BlockchainRegistrationStatus? ChainStatus { get; set; }           // "Pending", "Registered", "Failed"
     public string? ChainError { get; set; }               // mesaj dacă tranzacția a eșuat
 
     public DateTime UploadedAtUtc { get; set; } = DateTime.UtcNow;

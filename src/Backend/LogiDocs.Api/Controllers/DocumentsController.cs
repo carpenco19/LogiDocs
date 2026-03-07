@@ -1,7 +1,7 @@
 ﻿using LogiDocs.Application.Abstractions;
 using LogiDocs.Application.Documents.Commands;
 using LogiDocs.Application.Documents.Queries;
-using Microsoft.AspNetCore.Authorization;
+using LogiDocs.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +11,7 @@ public sealed class UploadDocumentForm
 {
     public Guid TransportId { get; set; }
     public int Type { get; set; }
-    public Guid UploadedByUserId { get; set; } // vine din Web (Identity)
+    public Guid UploadedByUserId { get; set; }
     public IFormFile File { get; set; } = default!;
 }
 
@@ -22,17 +22,23 @@ public sealed class DocumentsController : ControllerBase
     private readonly UploadDocumentUseCase _uploadUseCase;
     private readonly GetDocumentsByTransportUseCase _getByTransport;
     private readonly DownloadDocumentUseCase _downloadUseCase;
+    private readonly RegisterDocumentOnChainUseCase _registerOnChainUseCase;
+    private readonly VerifyDocumentUseCase _verifyDocumentUseCase;
     private readonly ILogiDocsDbContext _db;
 
     public DocumentsController(
         UploadDocumentUseCase uploadUseCase,
         GetDocumentsByTransportUseCase getByTransport,
         DownloadDocumentUseCase downloadUseCase,
+        RegisterDocumentOnChainUseCase registerOnChainUseCase,
+        VerifyDocumentUseCase verifyDocumentUseCase,
         ILogiDocsDbContext db)
     {
         _uploadUseCase = uploadUseCase;
         _getByTransport = getByTransport;
         _downloadUseCase = downloadUseCase;
+        _registerOnChainUseCase = registerOnChainUseCase;
+        _verifyDocumentUseCase = verifyDocumentUseCase;
         _db = db;
     }
 
@@ -50,7 +56,20 @@ public sealed class DocumentsController : ControllerBase
         return File(stream, "application/octet-stream", fileName);
     }
 
-    // MVP: API nu are login/claims. Deci nu folosim User aici.
+    [HttpGet("{documentId:guid}/verify")]
+    public async Task<IActionResult> Verify(Guid documentId, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _verifyDocumentUseCase.ExecuteAsync(documentId, ct);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Upload([FromForm] UploadDocumentForm form, CancellationToken ct)
@@ -80,27 +99,63 @@ public sealed class DocumentsController : ControllerBase
     [HttpPost("{documentId:guid}/register-onchain")]
     public async Task<IActionResult> RegisterOnChain(Guid documentId, CancellationToken ct)
     {
-        var doc = await _db.Documents.FirstOrDefaultAsync(x => x.Id == documentId, ct);
-        if (doc == null)
+        var existingDoc = await _db.Documents.FirstOrDefaultAsync(x => x.Id == documentId, ct);
+        if (existingDoc == null)
             return NotFound("Document not found.");
 
-        doc.ChainStatus = "Pending";
-        doc.ChainError = null;
-        await _db.SaveChangesAsync(ct);
+        await _registerOnChainUseCase.ExecuteAsync(documentId, ct);
 
-        // TEMP: simulăm blockchain
-        doc.BlockchainTxId = "SIMULATED_TX_" + Guid.NewGuid().ToString("N");
-        doc.ChainStatus = "Registered";
-        doc.RegisteredOnChainAtUtc = DateTime.UtcNow;
-
-        await _db.SaveChangesAsync(ct);
+        var doc = await _db.Documents.FirstOrDefaultAsync(x => x.Id == documentId, ct);
+        if (doc == null)
+            return NotFound("Document not found after registration.");
 
         return Ok(new
         {
             documentId = doc.Id,
-            chainStatus = doc.ChainStatus,
+            chainStatus = doc.ChainStatus?.ToString(),
             blockchainTxId = doc.BlockchainTxId,
-            registeredOnChainAtUtc = doc.RegisteredOnChainAtUtc
+            registeredOnChainAtUtc = doc.RegisteredOnChainAtUtc,
+            chainError = doc.ChainError
+        });
+    }
+
+    [HttpPost("{documentId:guid}/validate")]
+    public async Task<IActionResult> Validate(Guid documentId, CancellationToken ct)
+    {
+        var doc = await _db.Documents
+            .Include(x => x.Transport)
+            .FirstOrDefaultAsync(x => x.Id == documentId, ct);
+
+        if (doc == null)
+            return NotFound();
+
+        doc.Status = DocumentStatus.Verified;
+
+        await _db.SaveChangesAsync(ct);
+
+        // verificăm dacă toate documentele transportului sunt Verified
+        var allDocs = await _db.Documents
+            .Where(x => x.TransportId == doc.TransportId)
+            .ToListAsync(ct);
+
+        var allVerified = allDocs.All(x => x.Status == DocumentStatus.Verified);
+
+        if (allVerified)
+        {
+            var transport = await _db.Transports
+                .FirstOrDefaultAsync(x => x.Id == doc.TransportId, ct);
+
+            if (transport != null)
+            {
+                transport.Status = TransportStatus.Completed;
+                await _db.SaveChangesAsync(ct);
+            }
+        }
+
+        return Ok(new
+        {
+            documentId = doc.Id,
+            status = doc.Status.ToString()
         });
     }
 }

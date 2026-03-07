@@ -38,7 +38,8 @@ builder.Services.AddScoped<UploadDocumentUseCase>();
 builder.Services.AddScoped<GetDocumentsByTransportUseCase>();
 
 builder.Services.AddScoped<DownloadDocumentUseCase>();
-
+builder.Services.AddScoped<RegisterDocumentOnChainUseCase>();
+builder.Services.AddScoped<VerifyDocumentUseCase>();
 
 // ---------------- INFRASTRUCTURE ----------------
 

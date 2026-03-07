@@ -18,6 +18,20 @@
     <p style="color:red">@Model.Error</p>
 }
 
+@if (Model.VerificationResult != null)
+{
+    <div class="alert @(Model.VerificationResult.IsIntegrityValid ? "alert-success" : "alert-warning")">
+        <h5>Verification Result</h5>
+        <p><strong>Document:</strong> @Model.VerificationResult.OriginalFileName</p>
+        <p><strong>Hash:</strong> @Model.VerificationResult.Sha256</p>
+        <p><strong>Blockchain Tx:</strong> @(string.IsNullOrWhiteSpace(Model.VerificationResult.BlockchainTxId) ? "-" : Model.VerificationResult.BlockchainTxId)</p>
+        <p><strong>Status:</strong> @(string.IsNullOrWhiteSpace(Model.VerificationResult.ChainStatus) ? "-" : Model.VerificationResult.ChainStatus)</p>
+        <p><strong>Registered At:</strong> @(Model.VerificationResult.RegisteredOnChainAtUtc?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")</p>
+        <p><strong>Integrity Valid:</strong> @(Model.VerificationResult.IsIntegrityValid ? "Yes" : "No")</p>
+        <p><strong>Message:</strong> @Model.VerificationResult.VerificationMessage</p>
+    </div>
+}
+
 @if (!User.Identity!.IsAuthenticated)
 {
     <p style="color:#b00">
@@ -27,8 +41,6 @@
 }
 else
 {
-    @* ---------- UPLOAD ---------- *@
-
     @if (Model.CanUpload)
     {
         <h4>Upload New Document</h4>
@@ -74,11 +86,11 @@ else
     else
     {
         <table class="table table-striped">
-
             <thead>
                 <tr>
                     <th>File Name</th>
                     <th>Type</th>
+                    <th>Doc Status</th>
                     <th>Hash</th>
                     <th>Blockchain</th>
                     <th>Tx</th>
@@ -87,26 +99,54 @@ else
             </thead>
 
             <tbody>
-
                 @foreach (var d in Model.Documents)
                 {
-                    var registered = string.Equals(d.ChainStatus, "Registered",
-                    StringComparison.OrdinalIgnoreCase);
+                    var chainStatus = d.ChainStatus?.Trim();
+                    var isRegistered = string.Equals(chainStatus, "Registered", StringComparison.OrdinalIgnoreCase);
+                    var isPending = string.Equals(chainStatus, "Pending", StringComparison.OrdinalIgnoreCase);
+                    var isFailed = string.Equals(chainStatus, "Failed", StringComparison.OrdinalIgnoreCase);
+                    var isVerified = d.Status == 1;
 
                     <tr>
-
                         <td>@d.OriginalFileName</td>
 
-                        <td>@d.Type</td>
+                        <td>@d.TypeName</td>
+
+                        <td>
+                            @if (d.Status == 1)
+                            {
+                                <span class="badge bg-success">Verified</span>
+                            }
+                            else if (d.Status == 2)
+                            {
+                                <span class="badge bg-danger">Tampered</span>
+                            }
+                            else if (d.Status == 3)
+                            {
+                                <span class="badge bg-dark">Rejected</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Uploaded</span>
+                            }
+                        </td>
 
                         <td style="max-width:380px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                             @d.Sha256
                         </td>
 
                         <td>
-                            @if (registered)
+                            @if (isRegistered)
                             {
                                 <span class="badge bg-success">Registered</span>
+                            }
+                            else if (isPending)
+                            {
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            }
+                            else if (isFailed)
+                            {
+                                <span class="badge bg-danger">Failed</span>
                             }
                             else
                             {
@@ -119,37 +159,44 @@ else
                         </td>
 
                         <td>
-
                             <a class="btn btn-primary btn-sm"
                                href="http://localhost:5006/api/documents/@d.Id/download">
                                 Download
                             </a>
 
-                            @if (Model.CanRegister && !registered)
+                            @if (Model.CanRegister && !isRegistered && !isPending)
                             {
-                                <form method="post"
-                                      asp-page-handler="Register"
-                                      style="display:inline">
-
-                                    <input type="hidden"
-                                           asp-for="RegisterDocumentId"
-                                           value="@d.Id" />
-
-                                    <button type="submit"
-                                            class="btn btn-success btn-sm">
+                                <form method="post" asp-page-handler="Register" style="display:inline">
+                                    <input type="hidden" asp-for="RegisterDocumentId" value="@d.Id" />
+                                    <button type="submit" class="btn btn-success btn-sm">
                                         Register
                                     </button>
-
                                 </form>
                             }
 
-                        </td>
+                            @if (Model.CanVerify)
+                            {
+                                <form method="post" asp-page-handler="Verify" style="display:inline">
+                                    <input type="hidden" asp-for="VerifyDocumentId" value="@d.Id" />
+                                    <button type="submit" class="btn btn-warning btn-sm">
+                                        Verify
+                                    </button>
+                                </form>
+                            }
 
+                            @if (Model.CanValidate && !isVerified)
+                            {
+                                <form method="post" asp-page-handler="Validate" style="display:inline">
+                                    <input type="hidden" asp-for="ValidateDocumentId" value="@d.Id" />
+                                    <button type="submit" class="btn btn-dark btn-sm">
+                                        Validate
+                                    </button>
+                                </form>
+                            }
+                        </td>
                     </tr>
                 }
-
             </tbody>
-
         </table>
     }
 }

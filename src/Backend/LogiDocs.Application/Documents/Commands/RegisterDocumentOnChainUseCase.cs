@@ -1,4 +1,5 @@
 ﻿using LogiDocs.Application.Abstractions;
+using LogiDocs.Domain.Enums;
 
 namespace LogiDocs.Application.Documents.Commands;
 
@@ -22,7 +23,7 @@ public sealed class RegisterDocumentOnChainUseCase
         if (!string.IsNullOrWhiteSpace(doc.BlockchainTxId))
             return;
 
-        doc.ChainStatus = "Pending";
+        doc.ChainStatus = BlockchainRegistrationStatus.Pending;
         doc.ChainError = null;
         doc.RegisteredOnChainAtUtc = null;
         await _docs.SaveChangesAsync(ct);
@@ -32,7 +33,7 @@ public sealed class RegisterDocumentOnChainUseCase
             var txId = await _blockchain.RegisterDocumentHashAsync(doc.Sha256, doc.Id, ct);
 
             doc.BlockchainTxId = txId;
-            doc.ChainStatus = "Registered";
+            doc.ChainStatus = BlockchainRegistrationStatus.Registered;
             doc.RegisteredOnChainAtUtc = DateTime.UtcNow;
             doc.ChainError = null;
 
@@ -40,7 +41,7 @@ public sealed class RegisterDocumentOnChainUseCase
         }
         catch (Exception ex)
         {
-            doc.ChainStatus = "Failed";
+            doc.ChainStatus = BlockchainRegistrationStatus.Failed;
             doc.ChainError = ex.Message;
             await _docs.SaveChangesAsync(ct);
             throw;
