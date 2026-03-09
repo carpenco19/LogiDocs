@@ -3,90 +3,136 @@
 @using LogiDocs.Web.Auth
 
 @{
-    ViewData["Title"] = "Transporturi";
+    ViewData["Title"] = "Transports";
 }
 
-<h2>Transporturi</h2>
+<div class="app-page">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-6 fw-bold mb-1">Transports</h1>
+            <p class="text-muted mb-0">Monitor transport records and document progress</p>
+        </div>
 
-@if (User.IsInRole(Roles.Carrier) || User.IsInRole(Roles.Administrator))
-{
-    <p>
-        <a asp-page="/CreateTransport" class="btn btn-success btn-sm">Add shipping</a>
-    </p>
-}
+        @if (User.IsInRole(Roles.Carrier) || User.IsInRole(Roles.Administrator))
+        {
+            <a asp-page="/CreateTransport" class="btn btn-success">
+                Add Shipping
+            </a>
+        }
+    </div>
 
-@if (Model.Error != null)
-{
-    <p style="color:red">@Model.Error</p>
-}
-else if (Model.Items == null || Model.Items.Count == 0)
-{
-    <p>Nu există transporturi.</p>
-}
-else
-{
-    <table class="table table-striped align-middle">
-        <thead>
-            <tr>
-                <th>Reference</th>
-                <th>Origin</th>
-                <th>Destination</th>
-                <th>Status</th>
-                <th>Docs</th>
-                <th>Verified</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var t in Model.Items)
-            {
-                <tr>
-                    <td>
-                        <a asp-page="/TransportDetails" asp-route-id="@t.Id">
-                            @t.ReferenceNo
-                        </a>
-                    </td>
+    @if (Model.Error != null)
+    {
+        <div class="alert alert-danger shadow-sm">
+            @Model.Error
+        </div>
+    }
+    else if (Model.Items == null || Model.Items.Count == 0)
+    {
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <p class="text-muted mb-0">No transports available.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Transport List</h5>
+                    <span class="text-muted">@Model.Items.Count total</span>
+                </div>
 
-                    <td>@t.Origin</td>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Reference</th>
+                                <th>Origin</th>
+                                <th>Destination</th>
+                                <th>Status</th>
+                                <th>Docs</th>
+                                <th>Verified</th>
+                                <th>Progress</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in Model.Items)
+                            {
+                                var percent = t.DocumentsCount == 0
+                                ? 0
+                                : (int)Math.Round((double)t.VerifiedDocuments * 100 / t.DocumentsCount);
 
-                    <td>@t.Destination</td>
+                                <tr>
+                                    <td class="fw-semibold">
+                                        <a asp-page="/TransportDetails" asp-route-id="@t.Id">
+                                            @t.ReferenceNo
+                                        </a>
+                                    </td>
 
-                    <td>
-                        @if (t.Status == 0)
-                        {
-                            <span class="badge bg-secondary">Draft</span>
-                        }
-                        else if (t.Status == 1)
-                        {
-                            <span class="badge bg-warning text-dark">In Process</span>
-                        }
-                        else if (t.Status == 2)
-                        {
-                            <span class="badge bg-success">Completed</span>
-                        }
-                        else if (t.Status == 3)
-                        {
-                            <span class="badge bg-danger">Cancelled</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-dark">Unknown</span>
-                        }
-                    </td>
+                                    <td>@t.Origin</td>
+                                    <td>@t.Destination</td>
 
-                    <td>@t.DocumentsCount</td>
+                                    <td>
+                                        @if (t.Status == 0)
+                                        {
+                                            <span class="badge bg-secondary">Draft</span>
+                                        }
+                                        else if (t.Status == 1)
+                                        {
+                                            <span class="badge bg-warning text-dark">In Process</span>
+                                        }
+                                        else if (t.Status == 2)
+                                        {
+                                            <span class="badge bg-success">Completed</span>
+                                        }
+                                        else if (t.Status == 3)
+                                        {
+                                            <span class="badge bg-danger">Cancelled</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-dark">Unknown</span>
+                                        }
+                                    </td>
 
-                    <td>@t.VerifiedDocuments</td>
+                                    <td>
+                                        <span class="fw-semibold">@t.DocumentsCount</span>
+                                    </td>
 
-                    <td>
-                        <a class="btn btn-primary btn-sm"
-                           asp-page="/TransportDetails"
-                           asp-route-id="@t.Id">
-                            Open
-                        </a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+                                    <td>
+                                        <span class="fw-semibold">@t.VerifiedDocuments</span>
+                                    </td>
+
+                                    <td style="min-width: 180px;">
+                                        <div class="small mb-1">@t.VerifiedDocuments / @t.DocumentsCount</div>
+                                        <div class="progress" style="height: 18px;">
+                                            <div class="progress-bar bg-success"
+                                                 role="progressbar"
+                                                 style="width: @percent%;"
+                                                 aria-valuenow="@percent"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100">
+                                                @percent%
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <a class="btn btn-primary btn-sm"
+                                           asp-page="/TransportDetails"
+                                           asp-route-id="@t.Id">
+                                            Open
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -3,200 +3,332 @@
 
 @{
     ViewData["Title"] = "Transport Details";
+
+    var totalDocs = Model.Documents?.Count ?? 0;
+    var verifiedDocs = Model.Documents?.Count(x => x.Status == 1) ?? 0;
+    var rejectedDocs = Model.Documents?.Count(x => x.Status == 3) ?? 0;
+    var verificationPercent = totalDocs == 0 ? 0 : (int)Math.Round((double)verifiedDocs * 100 / totalDocs);
 }
 
-<h2>Transport Details</h2>
-
-<p>
-    <strong>Transport:</strong> @Model.TransportRef
-</p>
-
-<hr />
-
-@if (!string.IsNullOrWhiteSpace(Model.Error))
-{
-    <p style="color:red">@Model.Error</p>
-}
-
-@if (Model.VerificationResult != null)
-{
-    <div class="alert @(Model.VerificationResult.IsIntegrityValid ? "alert-success" : "alert-warning")">
-        <h5>Verification Result</h5>
-        <p><strong>Document:</strong> @Model.VerificationResult.OriginalFileName</p>
-        <p><strong>Hash:</strong> @Model.VerificationResult.Sha256</p>
-        <p><strong>Blockchain Tx:</strong> @(string.IsNullOrWhiteSpace(Model.VerificationResult.BlockchainTxId) ? "-" : Model.VerificationResult.BlockchainTxId)</p>
-        <p><strong>Status:</strong> @(string.IsNullOrWhiteSpace(Model.VerificationResult.ChainStatus) ? "-" : Model.VerificationResult.ChainStatus)</p>
-        <p><strong>Registered At:</strong> @(Model.VerificationResult.RegisteredOnChainAtUtc?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")</p>
-        <p><strong>Integrity Valid:</strong> @(Model.VerificationResult.IsIntegrityValid ? "Yes" : "No")</p>
-        <p><strong>Message:</strong> @Model.VerificationResult.VerificationMessage</p>
+<div class="app-page">
+    <div class="mb-4">
+        <h1 class="display-6 fw-bold">Transport Details</h1>
+        <p class="text-muted mb-0">Detailed view of logistics documents and validation workflow</p>
     </div>
-}
 
-@if (!User.Identity!.IsAuthenticated)
-{
-    <p style="color:#b00">
-        Nu ești autentificat. Te rog mergi la
-        <a href="/Identity/Account/Login">Login</a>.
-    </p>
-}
-else
-{
-    @if (Model.CanUpload)
-    {
-        <h4>Upload New Document</h4>
-
-        <form method="post"
-              enctype="multipart/form-data"
-              asp-page-handler="Upload">
-
-            <div class="row g-2 align-items-end">
-
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-center">
                 <div class="col-md-4">
-                    <label class="form-label">File</label>
-                    <input class="form-control" type="file" asp-for="UploadFile" />
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Document Type</label>
-                    <select class="form-select" asp-for="Type">
-                        <option value="0">CMR</option>
-                        <option value="1">Invoice</option>
-                        <option value="2">PackingList</option>
-                    </select>
+                    <h6 class="text-muted mb-1">Transport Reference</h6>
+                    <h4 class="fw-bold mb-0">@Model.TransportRef</h4>
                 </div>
 
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-success">
-                        Upload
-                    </button>
+                    <h6 class="text-muted mb-1">Documents</h6>
+                    <h4 class="fw-bold mb-0">@totalDocs</h4>
                 </div>
 
-            </div>
-        </form>
+                <div class="col-md-2">
+                    <h6 class="text-muted mb-1">Verified</h6>
+                    <h4 class="fw-bold mb-0 text-success">@verifiedDocs</h4>
+                </div>
 
-        <hr />
+                <div class="col-md-2">
+                    <h6 class="text-muted mb-1">Rejected</h6>
+                    <h4 class="fw-bold mb-0 text-danger">@rejectedDocs</h4>
+                </div>
+
+                <div class="col-md-2">
+                    <h6 class="text-muted mb-1">Progress</h6>
+                    <h4 class="fw-bold mb-0">@verificationPercent%</h4>
+                </div>
+            </div>
+
+            <hr />
+
+            <div>
+                <h6 class="text-muted mb-2">Document Verification Progress</h6>
+                <div class="progress" style="height: 22px;">
+                    <div class="progress-bar bg-success"
+                         role="progressbar"
+                         style="width: @verificationPercent%;"
+                         aria-valuenow="@verificationPercent"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+                        @verifiedDocs / @totalDocs
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="alert alert-danger shadow-sm">
+            @Model.Error
+        </div>
     }
 
-    <h4>Documents</h4>
-
-    @if (Model.Documents == null || Model.Documents.Count == 0)
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
     {
-        <p>No documents for this transport.</p>
+        <div class="alert alert-success shadow-sm">
+            @Model.SuccessMessage
+        </div>
+    }
+
+    @if (Model.VerificationResult != null)
+    {
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Verification Result</h5>
+
+                    @if (Model.VerificationResult.IsIntegrityValid)
+                    {
+                        <span class="badge bg-success">Valid</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">Check Required</span>
+                    }
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1">Document</h6>
+                        <div>@Model.VerificationResult.OriginalFileName</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1">Blockchain Status</h6>
+                        <div>@(string.IsNullOrWhiteSpace(Model.VerificationResult.ChainStatus) ? "-" : Model.VerificationResult.ChainStatus)</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1">Registered At</h6>
+                        <div>@(Model.VerificationResult.RegisteredOnChainAtUtc?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1">Integrity</h6>
+                        <div>@(Model.VerificationResult.IsIntegrityValid ? "Yes" : "No")</div>
+                    </div>
+
+                    <div class="col-12">
+                        <h6 class="text-muted mb-1">Hash</h6>
+                        <div class="small text-break">@Model.VerificationResult.Sha256</div>
+                    </div>
+
+                    <div class="col-12">
+                        <h6 class="text-muted mb-1">Blockchain Tx</h6>
+                        <div class="small text-break">@(string.IsNullOrWhiteSpace(Model.VerificationResult.BlockchainTxId) ? "-" : Model.VerificationResult.BlockchainTxId)</div>
+                    </div>
+
+                    <div class="col-12">
+                        <h6 class="text-muted mb-1">Message</h6>
+                        <div>@Model.VerificationResult.VerificationMessage</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!User.Identity!.IsAuthenticated)
+    {
+        <div class="alert alert-warning">
+            You are not authenticated. Please go to
+            <a href="/Identity/Account/Login">Login</a>.
+        </div>
     }
     else
     {
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>File Name</th>
-                    <th>Type</th>
-                    <th>Doc Status</th>
-                    <th>Hash</th>
-                    <th>Blockchain</th>
-                    <th>Tx</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
+        @if (Model.CanUpload)
+        {
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3">Upload New Document</h5>
 
-            <tbody>
-                @foreach (var d in Model.Documents)
+                    <form method="post"
+                          enctype="multipart/form-data"
+                          asp-page-handler="Upload">
+
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label">File</label>
+                                <input class="form-control" type="file" asp-for="UploadFile" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Document Type</label>
+                                <select class="form-select" asp-for="Type">
+                                    <option value="0">CMR</option>
+                                    <option value="1">Invoice</option>
+                                    <option value="2">Packing List</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-success w-100">
+                                    Upload Document
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Documents</h5>
+                    <span class="text-muted">@totalDocs total</span>
+                </div>
+
+                @if (Model.Documents == null || Model.Documents.Count == 0)
                 {
-                    var chainStatus = d.ChainStatus?.Trim();
-                    var isRegistered = string.Equals(chainStatus, "Registered", StringComparison.OrdinalIgnoreCase);
-                    var isPending = string.Equals(chainStatus, "Pending", StringComparison.OrdinalIgnoreCase);
-                    var isFailed = string.Equals(chainStatus, "Failed", StringComparison.OrdinalIgnoreCase);
-                    var isVerified = d.Status == 1;
-
-                    <tr>
-                        <td>@d.OriginalFileName</td>
-
-                        <td>@d.TypeName</td>
-
-                        <td>
-                            @if (d.Status == 1)
-                            {
-                                <span class="badge bg-success">Verified</span>
-                            }
-                            else if (d.Status == 2)
-                            {
-                                <span class="badge bg-danger">Tampered</span>
-                            }
-                            else if (d.Status == 3)
-                            {
-                                <span class="badge bg-dark">Rejected</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">Uploaded</span>
-                            }
-                        </td>
-
-                        <td style="max-width:380px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                            @d.Sha256
-                        </td>
-
-                        <td>
-                            @if (isRegistered)
-                            {
-                                <span class="badge bg-success">Registered</span>
-                            }
-                            else if (isPending)
-                            {
-                                <span class="badge bg-warning text-dark">Pending</span>
-                            }
-                            else if (isFailed)
-                            {
-                                <span class="badge bg-danger">Failed</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">Not registered</span>
-                            }
-                        </td>
-
-                        <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                            @(string.IsNullOrWhiteSpace(d.BlockchainTxId) ? "-" : d.BlockchainTxId)
-                        </td>
-
-                        <td>
-                            <a class="btn btn-primary btn-sm"
-                               href="http://localhost:5006/api/documents/@d.Id/download">
-                                Download
-                            </a>
-
-                            @if (Model.CanRegister && !isRegistered && !isPending)
-                            {
-                                <form method="post" asp-page-handler="Register" style="display:inline">
-                                    <input type="hidden" asp-for="RegisterDocumentId" value="@d.Id" />
-                                    <button type="submit" class="btn btn-success btn-sm">
-                                        Register
-                                    </button>
-                                </form>
-                            }
-
-                            @if (Model.CanVerify)
-                            {
-                                <form method="post" asp-page-handler="Verify" style="display:inline">
-                                    <input type="hidden" asp-for="VerifyDocumentId" value="@d.Id" />
-                                    <button type="submit" class="btn btn-warning btn-sm">
-                                        Verify
-                                    </button>
-                                </form>
-                            }
-
-                            @if (Model.CanValidate && !isVerified)
-                            {
-                                <form method="post" asp-page-handler="Validate" style="display:inline">
-                                    <input type="hidden" asp-for="ValidateDocumentId" value="@d.Id" />
-                                    <button type="submit" class="btn btn-dark btn-sm">
-                                        Validate
-                                    </button>
-                                </form>
-                            }
-                        </td>
-                    </tr>
+                    <p class="text-muted mb-0">No documents for this transport.</p>
                 }
-            </tbody>
-        </table>
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Type</th>
+                                    <th>Doc Status</th>
+                                    <th>Hash</th>
+                                    <th>Blockchain</th>
+                                    <th>Tx</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var d in Model.Documents)
+                                {
+                                    var chainStatus = d.ChainStatus?.Trim();
+                                    var isRegistered = string.Equals(chainStatus, "Registered", StringComparison.OrdinalIgnoreCase);
+                                    var isPending = string.Equals(chainStatus, "Pending", StringComparison.OrdinalIgnoreCase);
+                                    var isFailed = string.Equals(chainStatus, "Failed", StringComparison.OrdinalIgnoreCase);
+
+                                    var isUploaded = d.Status == 0;
+                                    var isVerified = d.Status == 1;
+                                    var isTampered = d.Status == 2;
+                                    var isRejected = d.Status == 3;
+
+                                    <tr>
+                                        <td class="fw-semibold">@d.OriginalFileName</td>
+
+                                        <td>@d.TypeName</td>
+
+                                        <td>
+                                            @if (d.Status == 1)
+                                            {
+                                                <span class="badge bg-success">Verified</span>
+                                            }
+                                            else if (d.Status == 2)
+                                            {
+                                                <span class="badge bg-danger">Tampered</span>
+                                            }
+                                            else if (d.Status == 3)
+                                            {
+                                                <span class="badge bg-dark">Rejected</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Uploaded</span>
+                                            }
+                                        </td>
+
+                                        <td style="max-width:260px;" class="small text-truncate">
+                                            @d.Sha256
+                                        </td>
+
+                                        <td>
+                                            @if (isRegistered)
+                                            {
+                                                <span class="badge bg-success">Registered</span>
+                                            }
+                                            else if (isPending)
+                                            {
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            }
+                                            else if (isFailed)
+                                            {
+                                                <span class="badge bg-danger">Failed</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Not registered</span>
+                                            }
+                                        </td>
+
+                                        <td style="max-width:220px;" class="small text-truncate">
+                                            @(string.IsNullOrWhiteSpace(d.BlockchainTxId) ? "-" : d.BlockchainTxId)
+                                        </td>
+
+                                        <td>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                <a class="btn btn-primary btn-sm"
+                                                   href="http://localhost:5006/api/documents/@d.Id/download">
+                                                    Download
+                                                </a>
+
+                                                @if (Model.CanRegister && !isRegistered && !isPending)
+                                                {
+                                                    <form method="post" asp-page-handler="Register" class="d-inline">
+                                                        <input type="hidden" asp-for="RegisterDocumentId" value="@d.Id" />
+                                                        <button type="submit" class="btn btn-success btn-sm">
+                                                            Register
+                                                        </button>
+                                                    </form>
+                                                }
+
+                                                @if (Model.CanVerify)
+                                                {
+                                                    <form method="post" asp-page-handler="Verify" class="d-inline">
+                                                        <input type="hidden" asp-for="VerifyDocumentId" value="@d.Id" />
+                                                        <button type="submit" class="btn btn-warning btn-sm">
+                                                            Verify
+                                                        </button>
+                                                    </form>
+                                                }
+
+                                                @if (Model.CanValidate && isUploaded)
+                                                {
+                                                    <form method="post" asp-page-handler="Validate" class="d-inline">
+                                                        <input type="hidden" asp-for="ValidateDocumentId" value="@d.Id" />
+                                                        <button type="submit"
+                                                                class="btn btn-dark btn-sm"
+                                                                onclick="return confirm('Are you sure you want to validate this document?');">
+                                                            Validate
+                                                        </button>
+                                                    </form>
+                                                }
+
+                                                @if (Model.CanValidate && isUploaded)
+                                                {
+                                                    <form method="post" asp-page-handler="Reject" class="d-inline">
+                                                        <input type="hidden" asp-for="RejectDocumentId" value="@d.Id" />
+                                                        <button type="submit"
+                                                                class="btn btn-danger btn-sm"
+                                                                onclick="return confirm('Are you sure you want to reject this document?');">
+                                                            Reject
+                                                        </button>
+                                                    </form>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
     }
-}
+</div>

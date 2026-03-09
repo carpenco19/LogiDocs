@@ -24,6 +24,9 @@ public sealed class TransportDetailsModel : PageModel
     public string? TransportRef { get; set; }
     public List<DocumentRow> Documents { get; set; } = new();
 
+    [TempData]
+    public string? SuccessMessage { get; set; }
+
     [BindProperty]
     public IFormFile? UploadFile { get; set; }
 
@@ -38,6 +41,9 @@ public sealed class TransportDetailsModel : PageModel
 
     [BindProperty]
     public Guid ValidateDocumentId { get; set; }
+
+    [BindProperty]
+    public Guid RejectDocumentId { get; set; }
 
     public DocumentVerificationDto? VerificationResult { get; set; }
 
@@ -85,14 +91,14 @@ public sealed class TransportDetailsModel : PageModel
 
         if (Id == Guid.Empty)
         {
-            Error = "Transport invalid.";
+            Error = "Invalid transport.";
             await OnGetAsync();
             return Page();
         }
 
         if (UploadFile == null || UploadFile.Length == 0)
         {
-            Error = "Fișierul este obligatoriu.";
+            Error = "The file is required.";
             await OnGetAsync();
             return Page();
         }
@@ -100,7 +106,7 @@ public sealed class TransportDetailsModel : PageModel
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
         {
-            Error = "Nu ești autentificat. Te rog fă login.";
+            Error = "You are not authenticated. Please log in.";
             await OnGetAsync();
             return Page();
         }
@@ -136,6 +142,7 @@ public sealed class TransportDetailsModel : PageModel
                 return Page();
             }
 
+            SuccessMessage = "Document uploaded successfully.";
             return RedirectToPage(new { id = Id });
         }
         catch (Exception ex)
@@ -153,7 +160,7 @@ public sealed class TransportDetailsModel : PageModel
 
         if (RegisterDocumentId == Guid.Empty)
         {
-            Error = "Document invalid.";
+            Error = "Invalid document.";
             await OnGetAsync();
             return Page();
         }
@@ -167,11 +174,12 @@ public sealed class TransportDetailsModel : PageModel
             if (!resp.IsSuccessStatusCode)
             {
                 var body = await resp.Content.ReadAsStringAsync();
-                Error = $"Register failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
+                Error = $"Registration failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
                 await OnGetAsync();
                 return Page();
             }
 
+            SuccessMessage = "Document registered on blockchain.";
             return RedirectToPage(new { id = Id });
         }
         catch (Exception ex)
@@ -189,7 +197,7 @@ public sealed class TransportDetailsModel : PageModel
 
         if (VerifyDocumentId == Guid.Empty)
         {
-            Error = "Document invalid.";
+            Error = "Invalid document.";
             await OnGetAsync();
             return Page();
         }
@@ -203,7 +211,7 @@ public sealed class TransportDetailsModel : PageModel
 
             if (result == null)
             {
-                Error = "Nu s-a putut obține rezultatul verificării.";
+                Error = "The verification result could not be obtained.";
                 await OnGetAsync();
                 return Page();
             }
@@ -217,6 +225,7 @@ public sealed class TransportDetailsModel : PageModel
             var docs = await client.GetFromJsonAsync<List<DocumentRow>>($"api/documents/by-transport/{Id}");
             Documents = docs ?? new List<DocumentRow>();
 
+            SuccessMessage = "Document verification completed.";
             return Page();
         }
         catch (Exception ex)
@@ -234,7 +243,7 @@ public sealed class TransportDetailsModel : PageModel
 
         if (ValidateDocumentId == Guid.Empty)
         {
-            Error = "Document invalid.";
+            Error = "Invalid document.";
             await OnGetAsync();
             return Page();
         }
@@ -248,11 +257,49 @@ public sealed class TransportDetailsModel : PageModel
             if (!resp.IsSuccessStatusCode)
             {
                 var body = await resp.Content.ReadAsStringAsync();
-                Error = $"Validate failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
+                Error = $"Validation failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
                 await OnGetAsync();
                 return Page();
             }
 
+            SuccessMessage = "Document validated successfully.";
+            return RedirectToPage(new { id = Id });
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+            await OnGetAsync();
+            return Page();
+        }
+    }
+
+    public async Task<IActionResult> OnPostRejectAsync()
+    {
+        if (!CanValidate)
+            return Forbid();
+
+        if (RejectDocumentId == Guid.Empty)
+        {
+            Error = "Invalid document.";
+            await OnGetAsync();
+            return Page();
+        }
+
+        try
+        {
+            var client = _factory.CreateClient("LogiDocsApi");
+
+            var resp = await client.PostAsync($"api/documents/{RejectDocumentId}/reject", null);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                Error = $"Rejection failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
+                await OnGetAsync();
+                return Page();
+            }
+
+            SuccessMessage = "Document rejected successfully.";
             return RedirectToPage(new { id = Id });
         }
         catch (Exception ex)

@@ -10,8 +10,4 @@
     <ProjectReference Include="..\..\backend\LogiDocs.Domain\LogiDocs.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="NewFolder\" />
-  </ItemGroup>
-
 </Project>

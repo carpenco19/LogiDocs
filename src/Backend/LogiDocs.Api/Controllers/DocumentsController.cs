@@ -158,4 +158,31 @@ public sealed class DocumentsController : ControllerBase
             status = doc.Status.ToString()
         });
     }
+
+    [HttpPost("{documentId:guid}/reject")]
+    public async Task<IActionResult> Reject(Guid documentId, CancellationToken ct)
+    {
+        var doc = await _db.Documents.FirstOrDefaultAsync(x => x.Id == documentId, ct);
+
+        if (doc == null)
+            return NotFound("Document not found.");
+
+        doc.Status = DocumentStatus.Rejected;
+
+        await _db.SaveChangesAsync(ct);
+
+        var transport = await _db.Transports.FirstOrDefaultAsync(x => x.Id == doc.TransportId, ct);
+
+        if (transport != null && transport.Status == TransportStatus.Completed)
+        {
+            transport.Status = TransportStatus.InProcess;
+            await _db.SaveChangesAsync(ct);
+        }
+
+        return Ok(new
+        {
+            documentId = doc.Id,
+            status = doc.Status.ToString()
+        });
+    }
 }

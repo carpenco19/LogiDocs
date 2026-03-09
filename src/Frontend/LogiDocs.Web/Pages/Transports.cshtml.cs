@@ -15,7 +15,6 @@ public sealed class TransportsModel : PageModel
     }
 
     public string? Error { get; set; }
-
     public List<TransportRow> Items { get; set; } = new();
 
     public async Task OnGetAsync()
@@ -38,17 +37,11 @@ public sealed class TransportsModel : PageModel
     public sealed class TransportRow
     {
         public Guid Id { get; set; }
-
         public string? ReferenceNo { get; set; }
-
         public string? Origin { get; set; }
-
         public string? Destination { get; set; }
-
         public int Status { get; set; }
-
         public int DocumentsCount { get; set; }
-
         public int VerifiedDocuments { get; set; }
 
         public string StatusName => Status switch

@@ -1,48 +1,221 @@
-﻿/* Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
-for details on configuring this project to bundle and minify static web assets. */
-
-a.navbar-brand {
-  white-space: normal;
-  text-align: center;
-  word-break: break-all;
+﻿html {
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
 }
 
+@media (min-width: 768px) {
+    html {
+        font-size: 15px;
+    }
+}
+
+body {
+    margin: 0;
+    background-color: #f6f8fb;
+    color: #1f2937;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Links */
 a {
-  color: #0077cc;
+    color: #2563eb;
+    text-decoration: none;
+}
+
+    a:hover {
+        color: #1d4ed8;
+        text-decoration: underline;
+    }
+
+/* Navbar */
+.app-navbar {
+    background: #ffffff;
+    min-height: 70px;
+}
+
+.app-brand {
+    font-size: 1.25rem;
+    color: #111827 !important;
+    letter-spacing: 0.2px;
+}
+
+.app-nav-links .nav-link {
+    color: #374151 !important;
+    font-weight: 500;
+    margin-right: 0.5rem;
+}
+
+    .app-nav-links .nav-link:hover {
+        color: #111827 !important;
+    }
+
+.app-user-name {
+    color: #6b7280 !important;
+    font-size: 0.95rem;
+}
+
+/* Main */
+.app-shell {
+    min-height: calc(100vh - 140px);
+}
+
+.app-main {
+    max-width: 1240px;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 0.6rem;
+    font-weight: 500;
+    box-shadow: none !important;
+}
+
+.btn-sm {
+    border-radius: 0.5rem;
 }
 
 .btn-primary {
-  color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
+    color: #fff;
+    background-color: #2563eb;
+    border-color: #2563eb;
 }
 
-.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
-  color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
+    .btn-primary:hover {
+        color: #fff;
+        background-color: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+
+.btn-success {
+    color: #fff;
+    background-color: #16a34a;
+    border-color: #16a34a;
+}
+
+    .btn-success:hover {
+        color: #fff;
+        background-color: #15803d;
+        border-color: #15803d;
+    }
+
+.btn-warning {
+    color: #111827;
+    background-color: #facc15;
+    border-color: #facc15;
+}
+
+    .btn-warning:hover {
+        color: #111827;
+        background-color: #eab308;
+        border-color: #eab308;
+    }
+
+.btn-danger {
+    color: #fff;
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
+    .btn-danger:hover {
+        color: #fff;
+        background-color: #b91c1c;
+        border-color: #b91c1c;
+    }
+
+.btn-dark {
+    color: #fff;
+    background-color: #111827;
+    border-color: #111827;
+}
+
+    .btn-dark:hover {
+        color: #fff;
+        background-color: #030712;
+        border-color: #030712;
+    }
+
+/* Cards */
+.card {
+    border: 1px solid #e5e7eb !important;
+    border-radius: 1rem;
+    background-color: #ffffff;
+}
+
+    .card .card-body {
+        padding: 1.25rem 1.25rem;
+    }
+
+/* Tables */
+.table {
+    --bs-table-bg: transparent;
+}
+
+    .table thead th {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #111827;
+        border-bottom: 1px solid #dbe3ee;
+        white-space: nowrap;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        border-color: #edf2f7;
+    }
+
+.table-hover tbody tr:hover {
+    background-color: #f9fbff;
+}
+
+/* Badges */
+.badge {
+    border-radius: 999px;
+    font-weight: 600;
+    padding: 0.45em 0.7em;
+    font-size: 0.74rem;
+}
+
+/* Alerts */
+.alert {
+    border: 1px solid transparent;
+    border-radius: 1rem;
+}
+
+/* Progress */
+.progress {
+    background-color: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    font-weight: 600;
+}
+
+/* Footer */
+.app-footer {
+    background: #ffffff;
+    margin-top: 2rem;
+}
+
+.footer-link {
+    color: #6b7280;
+}
+
+    .footer-link:hover {
+        color: #111827;
+    }
+
+/* Utility */
+.box-shadow {
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
 }
 
 .border-top {
-  border-top: 1px solid #e5e5e5;
+    border-top: 1px solid #e5e7eb !important;
 }
+
 .border-bottom {
-  border-bottom: 1px solid #e5e5e5;
-}
-
-.box-shadow {
-  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
-}
-
-button.accept-policy {
-  font-size: 1rem;
-  line-height: inherit;
-}
-
-.footer {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  white-space: nowrap;
-  line-height: 60px;
+    border-bottom: 1px solid #e5e7eb !important;
 }

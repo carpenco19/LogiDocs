@@ -1,8 +1,116 @@
 ﻿@page
-@model PrivacyModel
+@model LogiDocs.Web.Pages.PrivacyModel
 @{
     ViewData["Title"] = "Privacy Policy";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="app-page">
+    <div class="dashboard-card">
+        <div class="dashboard-card-header mb-3">
+            <div>
+                <h1 class="display-6 fw-bold mb-2">Privacy Policy</h1>
+                <p class="text-muted mb-0">
+                    Information about how LogiDocs processes, stores, and protects platform data.
+                </p>
+            </div>
+        </div>
+
+        <section class="mb-4">
+            <h4 class="fw-bold mb-2">Overview</h4>
+            <p class="mb-0">
+                LogiDocs is a web platform designed to manage transport records, logistics documents,
+                and document validation workflows. The system supports document upload, integrity
+                verification, role-based access, and monitoring of transport-related processes.
+            </p>
+        </section>
+
+        <section class="mb-4">
+            <h4 class="fw-bold mb-2">Data We Collect</h4>
+            <p>
+                The platform may process user account data, transport information, uploaded
+                logistics documents, document hashes generated for integrity verification,
+                document statuses, transport statuses, and workflow-related actions performed
+                by authorized users.
+            </p>
+            <p class="mb-0">
+                Uploaded files are stored within the application environment and are linked
+                to the corresponding transport and document records.
+            </p>
+        </section>
+
+        <section class="mb-4">
+            <h4 class="fw-bold mb-2">Purpose of Data Processing</h4>
+            <p>
+                Data is processed in order to support the core functionality of the application,
+                including transport registration, document management, integrity verification,
+                validation workflows, and controlled access to information based on user roles.
+            </p>
+            <p class="mb-0">
+                Hash values are generated to support document integrity checks and to detect
+                possible modifications to stored files.
+            </p>
+        </section>
+
+        <section class="mb-4">
+            <h4 class="fw-bold mb-2">Access and User Roles</h4>
+            <p>
+                Access to information in LogiDocs is restricted according to user roles.
+                Depending on permissions, users may upload documents, register them in the
+                validation workflow, verify integrity, validate records, or reject documents.
+            </p>
+            <p class="mb-0">
+                Role-based access helps ensure that only authorized users can perform specific
+                operations or view protected records.
+            </p>
+        </section>
+
+        <section class="mb-4">
+            <h4 class="fw-bold mb-2">Data Protection</h4>
+            <p>
+                LogiDocs applies authentication and access control mechanisms to protect system
+                data. Documents are stored in a structured environment, and integrity control
+                is supported through generated SHA-256 hashes.
+            </p>
+            <p class="mb-0">
+                The application is designed to reduce unauthorized access and to preserve the
+                consistency of transport and document records.
+            </p>
+        </section>
+
+        <section class="mb-4">
+            <h4 class="fw-bold mb-2">Blockchain Notice</h4>
+            <p class="mb-0">
+                In the current version of the system, blockchain registration is simulated for
+                demonstration and development purposes. The platform may be extended in the future
+                to support real blockchain integration for document traceability and authenticity
+                confirmation.
+            </p>
+        </section>
+
+        <section class="mb-4">
+            <h4 class="fw-bold mb-2">Data Retention</h4>
+            <p class="mb-0">
+                Records and uploaded documents are retained for as long as they are required for
+                the operation of the platform, testing activities, or administrative review, in
+                accordance with the rules defined for the system.
+            </p>
+        </section>
+
+        <section class="mb-4">
+            <h4 class="fw-bold mb-2">User Rights</h4>
+            <p class="mb-0">
+                Authorized users may request access to relevant information, correction of inaccurate
+                records, or removal of data where such actions are permitted by the application rules
+                and administrative policies.
+            </p>
+        </section>
+
+        <section>
+            <h4 class="fw-bold mb-2">Contact Information</h4>
+            <p class="mb-0">
+                For questions regarding privacy, data handling, or access to information stored in
+                LogiDocs, users should contact the platform administrator.
+            </p>
+        </section>
+    </div>
+</div>

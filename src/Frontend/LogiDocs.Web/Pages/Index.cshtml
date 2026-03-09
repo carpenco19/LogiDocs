@@ -1,10 +1,264 @@
 ﻿@page
-@model IndexModel
+@model LogiDocs.Web.Pages.IndexModel
+@using LogiDocs.Web.Auth
+
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="app-page dashboard-home-page">
+    <section class="dashboard-hero mb-4">
+        <div class="dashboard-hero-overlay"></div>
+        <div class="dashboard-hero-content">
+            <div class="dashboard-hero-text">
+                <div class="hero-badge mb-3">Logistics Document Platform</div>
+                <h1 class="dashboard-hero-title">LogiDocs Dashboard</h1>
+                <p class="dashboard-hero-subtitle">
+                    Monitor transports, track document progress, and manage validation workflows in one place.
+                </p>
+
+                <div class="dashboard-actions mt-4">
+                    <a asp-page="/Transports" class="btn btn-primary btn-lg dashboard-action-btn">
+                        Open Transports
+                    </a>
+
+                    @if (User.IsInRole(Roles.Carrier) || User.IsInRole(Roles.Administrator))
+                    {
+                        <a asp-page="/CreateTransport" class="btn btn-success btn-lg dashboard-action-btn">
+                            Create Transport
+                        </a>
+                    }
+
+                    <a asp-page="/Index" class="btn btn-outline-light btn-lg dashboard-action-btn">
+                        Refresh Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="hero-side-card">
+                <div class="hero-side-card-inner">
+                    <div class="hero-side-label">System Overview</div>
+                    <div class="hero-side-value">@Model.TotalTransports</div>
+                    <div class="hero-side-text">active transport records in the system</div>
+
+                    <div class="hero-mini-stats mt-4">
+                        <div class="hero-mini-stat">
+                            <span>Verified</span>
+                            <strong>@Model.VerifiedDocuments</strong>
+                        </div>
+                        <div class="hero-mini-stat">
+                            <span>Rejected</span>
+                            <strong>@Model.RejectedDocuments</strong>
+                        </div>
+                        <div class="hero-mini-stat">
+                            <span>Progress</span>
+                            <strong>@Model.VerificationPercent%</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="dashboard-section mb-4">
+        <div class="stats-grid">
+            <div class="modern-stat-card">
+                <div class="modern-stat-label">Total Transports</div>
+                <div class="modern-stat-value">@Model.TotalTransports</div>
+            </div>
+
+            <div class="modern-stat-card">
+                <div class="modern-stat-label">Draft</div>
+                <div class="modern-stat-value">@Model.DraftTransports</div>
+            </div>
+
+            <div class="modern-stat-card">
+                <div class="modern-stat-label">In Process</div>
+                <div class="modern-stat-value">@Model.InProcessTransports</div>
+            </div>
+
+            <div class="modern-stat-card">
+                <div class="modern-stat-label">Completed</div>
+                <div class="modern-stat-value">@Model.CompletedTransports</div>
+            </div>
+
+            <div class="modern-stat-card">
+                <div class="modern-stat-label">Cancelled</div>
+                <div class="modern-stat-value">@Model.CancelledTransports</div>
+            </div>
+
+            <div class="modern-stat-card">
+                <div class="modern-stat-label">Total Documents</div>
+                <div class="modern-stat-value">@Model.TotalDocuments</div>
+            </div>
+
+            <div class="modern-stat-card">
+                <div class="modern-stat-label">Verified Documents</div>
+                <div class="modern-stat-value">@Model.VerifiedDocuments</div>
+            </div>
+
+            <div class="modern-stat-card">
+                <div class="modern-stat-label">Rejected Documents</div>
+                <div class="modern-stat-value">@Model.RejectedDocuments</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="dashboard-card mb-4">
+        <div class="dashboard-card-header">
+            <div>
+                <h5 class="mb-1">Verification Progress</h5>
+                <p class="text-muted mb-0">Current document validation rate across all transports</p>
+            </div>
+            <div class="progress-label">@Model.VerificationPercent%</div>
+        </div>
+
+        <div class="mt-3">
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Verified documents</span>
+                <strong>@Model.VerifiedDocuments / @Model.TotalDocuments</strong>
+            </div>
+
+            <div class="progress logistics-progress" style="height: 18px;">
+                <div class="progress-bar logistics-progress-bar"
+                     role="progressbar"
+                     style="width: @Model.VerificationPercent%;"
+                     aria-valuenow="@Model.VerificationPercent"
+                     aria-valuemin="0"
+                     aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="dashboard-card mb-4">
+        <div class="dashboard-card-header">
+            <div>
+                <h5 class="mb-1">Recent Transports</h5>
+                <p class="text-muted mb-0">Latest transport records and their document status</p>
+            </div>
+        </div>
+
+        @if (Model.RecentTransports.Count == 0)
+        {
+            <p class="text-muted mb-0 mt-3">No transports available.</p>
+        }
+        else
+        {
+            <div class="table-responsive mt-3">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Origin</th>
+                            <th>Destination</th>
+                            <th>Status</th>
+                            <th>Verified</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model.RecentTransports)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@t.ReferenceNo</td>
+                                <td>@t.Origin</td>
+                                <td>@t.Destination</td>
+                                <td>
+                                    @if (t.Status == 0)
+                                    {
+                                        <span class="badge bg-secondary">Draft</span>
+                                    }
+                                    else if (t.Status == 1)
+                                    {
+                                        <span class="badge bg-warning text-dark">In Process</span>
+                                    }
+                                    else if (t.Status == 2)
+                                    {
+                                        <span class="badge bg-success">Completed</span>
+                                    }
+                                    else if (t.Status == 3)
+                                    {
+                                        <span class="badge bg-danger">Cancelled</span>
+                                    }
+                                </td>
+                                <td>@t.VerifiedDocuments / @t.DocumentsCount</td>
+                                <td>
+                                    <a class="btn btn-primary btn-sm"
+                                       asp-page="/TransportDetails"
+                                       asp-route-id="@t.Id">
+                                        Open
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <section class="dashboard-card h-100">
+                <div class="dashboard-card-header">
+                    <div>
+                        <h5 class="mb-1">System Status</h5>
+                        <p class="text-muted mb-0">Current operational state of the platform</p>
+                    </div>
+                </div>
+
+                <div class="status-grid mt-3">
+                    <div class="status-tile">
+                        <div class="status-label">Transport Workflow</div>
+                        <div class="status-value status-ok">Operational</div>
+                    </div>
+
+                    <div class="status-tile">
+                        <div class="status-label">Document Verification</div>
+                        <div class="status-value status-ok">Active</div>
+                    </div>
+
+                    <div class="status-tile">
+                        <div class="status-label">Blockchain Registration</div>
+                        <div class="status-value status-warn">Simulated Mode</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-6">
+            <section class="dashboard-card h-100">
+                <div class="dashboard-card-header">
+                    <div>
+                        <h5 class="mb-1">Quick Summary</h5>
+                        <p class="text-muted mb-0">A short overview of the current system data</p>
+                    </div>
+                </div>
+
+                <div class="summary-list mt-3">
+                    <div class="summary-item">
+                        <span>Total transport records</span>
+                        <strong>@Model.TotalTransports</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Total documents</span>
+                        <strong>@Model.TotalDocuments</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Verified documents</span>
+                        <strong>@Model.VerifiedDocuments</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Rejected documents</span>
+                        <strong>@Model.RejectedDocuments</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Tampered documents</span>
+                        <strong>@Model.TamperedDocuments</strong>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 </div>
