@@ -1,0 +1,259 @@
+﻿@page
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="access-denied-page">
+    <div class="container">
+        <div class="access-denied-shell">
+
+            <section class="access-denied-card">
+                <div class="access-denied-badge">Restricted area</div>
+
+                <div class="access-denied-icon">🔒</div>
+
+                <h1>Access denied</h1>
+
+                <p class="access-denied-text">
+                    Your account does not have permission to access this page or perform this action.
+                    Please return to a section available for your role.
+                </p>
+
+                <div class="role-hint-box">
+                    <h5 class="mb-2">Why am I seeing this?</h5>
+                    <p class="mb-0">
+                        LogiDocs uses role-based access control. Some pages and operations are available
+                        only to specific roles such as Shipper, Carrier, Customs Broker, Customs Authority,
+                        or Administrator.
+                    </p>
+                </div>
+
+                <div class="access-denied-actions">
+                    <a asp-area="" asp-page="/Index" class="btn-primary-modern">
+                        Back to Dashboard
+                    </a>
+
+                    <a asp-area="" asp-page="/Transports" class="btn-secondary-modern">
+                        Open Transports
+                    </a>
+                </div>
+
+                <div class="access-denied-links">
+                    <a asp-area="" asp-page="/Privacy" class="link-tile">
+                        <strong>Privacy policy</strong>
+                        <span>Review how LogiDocs handles data and document confidentiality.</span>
+                    </a>
+
+                    <a asp-area="Identity" asp-page="/Account/Login" class="link-tile">
+                        <strong>Sign in again</strong>
+                        <span>Return to the login page and continue with another account if needed.</span>
+                    </a>
+                </div>
+            </section>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .access-denied-page {
+        min-height: calc(100vh - 80px);
+        padding: 40px 0;
+        display: flex;
+        align-items: center;
+        background: radial-gradient(circle at top left, rgba(239, 68, 68, 0.10), transparent 26%), radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.10), transparent 26%), linear-gradient(180deg, #f8fafc 0%, #edf4ff 100%);
+    }
+
+    .access-denied-shell {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .access-denied-card {
+        width: 100%;
+        max-width: 820px;
+        padding: 42px;
+        border-radius: 32px;
+        background: rgba(255, 255, 255, 0.90);
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.10);
+        backdrop-filter: blur(14px);
+        text-align: center;
+    }
+
+    .access-denied-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: #fee2e2;
+        color: #b91c1c;
+        font-size: 0.88rem;
+        font-weight: 700;
+        margin-bottom: 18px;
+    }
+
+    .access-denied-icon {
+        width: 88px;
+        height: 88px;
+        margin: 0 auto 20px;
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        box-shadow: 0 18px 36px rgba(220, 38, 38, 0.22);
+    }
+
+    .access-denied-card h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 14px;
+        line-height: 1.15;
+    }
+
+    .access-denied-text {
+        max-width: 600px;
+        margin: 0 auto 26px;
+        color: #64748b;
+        font-size: 1.03rem;
+        line-height: 1.8;
+    }
+
+    .role-hint-box {
+        text-align: left;
+        max-width: 680px;
+        margin: 0 auto 28px;
+        padding: 20px 22px;
+        border-radius: 22px;
+        background: #f8fbff;
+        border: 1px solid #dbe7f5;
+    }
+
+        .role-hint-box h5 {
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .role-hint-box p {
+            color: #64748b;
+            line-height: 1.7;
+        }
+
+    .access-denied-actions {
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 26px;
+    }
+
+    .btn-primary-modern,
+    .btn-secondary-modern {
+        min-height: 52px;
+        padding: 0 22px;
+        border-radius: 16px;
+        text-decoration: none;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary-modern {
+        color: #fff;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        box-shadow: 0 16px 30px rgba(37, 99, 235, 0.22);
+    }
+
+        .btn-primary-modern:hover {
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 20px 36px rgba(37, 99, 235, 0.28);
+        }
+
+    .btn-secondary-modern {
+        color: #0f172a;
+        background: #f8fbff;
+        border: 1px solid #dbe7f5;
+    }
+
+        .btn-secondary-modern:hover {
+            color: #0f172a;
+            background: #f1f7ff;
+            border-color: #bfdbfe;
+            transform: translateY(-1px);
+        }
+
+    .access-denied-links {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+        margin-top: 8px;
+    }
+
+    .link-tile {
+        text-align: left;
+        text-decoration: none;
+        padding: 18px 20px;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        background: #f8fbff;
+        transition: all 0.2s ease;
+    }
+
+        .link-tile strong {
+            display: block;
+            color: #0f172a;
+            font-size: 1rem;
+            margin-bottom: 6px;
+        }
+
+        .link-tile span {
+            color: #64748b;
+            font-size: 0.94rem;
+            line-height: 1.6;
+        }
+
+        .link-tile:hover {
+            transform: translateY(-2px);
+            border-color: #bfdbfe;
+            background: #f0f7ff;
+        }
+
+    @@media (max-width: 767.98px) {
+        .access-denied-page {
+            min-height: auto;
+            padding: 20px 0 32px;
+        }
+
+        .access-denied-card {
+            padding: 26px;
+            border-radius: 24px;
+        }
+
+            .access-denied-card h1 {
+                font-size: 2rem;
+            }
+
+        .access-denied-links {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .access-denied-actions {
+            flex-direction: column;
+        }
+
+        .btn-primary-modern,
+        .btn-secondary-modern {
+            width: 100%;
+        }
+    }
+</style>

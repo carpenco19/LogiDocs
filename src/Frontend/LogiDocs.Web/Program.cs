@@ -1,27 +1,25 @@
 using LogiDocs.Web.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<JwtOptions>(
+    builder.Configuration.GetSection(JwtOptions.SectionName));
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IApiTokenService, ApiTokenService>();
+builder.Services.AddTransient<ApiBearerTokenHandler>();
 
 builder.Services.AddHttpClient("LogiDocsApi", c =>
 {
     c.BaseAddress = new Uri("http://localhost:5006/");
 })
-.ConfigurePrimaryHttpMessageHandler(() =>
-{
-    return new HttpClientHandler
-    {
-        UseCookies = true,
-        CookieContainer = new CookieContainer()
-    };
-});
+.AddHttpMessageHandler<ApiBearerTokenHandler>();
 
-// Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddAuthorization();
-//----------------------
+
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -38,7 +36,6 @@ builder.Services
     .AddDefaultTokenProviders()
     .AddDefaultUI();
 
-//--------------
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Identity/Account/Login";
@@ -46,6 +43,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 var app = builder.Build();
+
 if (app.Environment.IsDevelopment())
 {
     await IdentitySeeder.SeedAsync(app.Services);
@@ -66,15 +64,15 @@ if (app.Environment.IsDevelopment())
                 UseShellExecute = true
             });
         }
-        catch { }
+        catch
+        {
+        }
     });
 }
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -82,10 +80,8 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 app.UseAuthentication();
-
 app.UseAuthorization();
 
-//app.UseStaticFiles();
 app.MapStaticAssets();
 app.MapRazorPages()
    .WithStaticAssets();

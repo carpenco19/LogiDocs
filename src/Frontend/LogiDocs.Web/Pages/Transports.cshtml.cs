@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 
 namespace LogiDocs.Web.Pages;
 
-[Authorize]
+[Authorize(Roles = "Shipper,Carrier,CustomsBroker,CustomsAuthority,Administrator")]
 public sealed class TransportsModel : PageModel
 {
     private readonly IHttpClientFactory _factory;

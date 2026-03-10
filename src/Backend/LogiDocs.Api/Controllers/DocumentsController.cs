@@ -1,7 +1,10 @@
-﻿using LogiDocs.Application.Abstractions;
+﻿using System.Security.Claims;
+using LogiDocs.Api.Security;
+using LogiDocs.Application.Abstractions;
 using LogiDocs.Application.Documents.Commands;
 using LogiDocs.Application.Documents.Queries;
 using LogiDocs.Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,12 +14,17 @@ public sealed class UploadDocumentForm
 {
     public Guid TransportId { get; set; }
     public int Type { get; set; }
+
+    // Se păstrează doar ca să nu rupem imediat request-urile vechi.
+    // Backend-ul nu îl mai folosește pentru securitate.
     public Guid UploadedByUserId { get; set; }
+
     public IFormFile File { get; set; } = default!;
 }
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public sealed class DocumentsController : ControllerBase
 {
     private readonly UploadDocumentUseCase _uploadUseCase;
@@ -43,6 +51,7 @@ public sealed class DocumentsController : ControllerBase
     }
 
     [HttpGet("by-transport/{transportId:guid}")]
+    [Authorize(Roles = ApiRoles.AllOperational)]
     public async Task<IActionResult> GetByTransport(Guid transportId, CancellationToken ct)
     {
         var items = await _getByTransport.ExecuteAsync(transportId, ct);
@@ -50,6 +59,7 @@ public sealed class DocumentsController : ControllerBase
     }
 
     [HttpGet("{documentId:guid}/download")]
+    [Authorize(Roles = ApiRoles.AllOperational)]
     public async Task<IActionResult> Download(Guid documentId, CancellationToken ct)
     {
         var (stream, fileName) = await _downloadUseCase.ExecuteAsync(documentId, ct);
@@ -57,6 +67,7 @@ public sealed class DocumentsController : ControllerBase
     }
 
     [HttpGet("{documentId:guid}/verify")]
+    [Authorize(Roles = ApiRoles.ReviewDocuments)]
     public async Task<IActionResult> Verify(Guid documentId, CancellationToken ct)
     {
         try
@@ -72,6 +83,7 @@ public sealed class DocumentsController : ControllerBase
 
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
+    [Authorize(Roles = ApiRoles.UploadDocuments)]
     public async Task<IActionResult> Upload([FromForm] UploadDocumentForm form, CancellationToken ct)
     {
         if (form.File == null || form.File.Length == 0)
@@ -80,15 +92,16 @@ public sealed class DocumentsController : ControllerBase
         if (form.TransportId == Guid.Empty)
             return BadRequest("TransportId is required.");
 
-        if (form.UploadedByUserId == Guid.Empty)
-            return BadRequest("UploadedByUserId is required.");
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdText, out var uploadedByUserId))
+            return Forbid();
 
         await using var stream = form.File.OpenReadStream();
 
         var documentId = await _uploadUseCase.ExecuteAsync(
             form.TransportId,
             form.Type,
-            form.UploadedByUserId,
+            uploadedByUserId,
             stream,
             form.File.FileName,
             ct);
@@ -97,6 +110,7 @@ public sealed class DocumentsController : ControllerBase
     }
 
     [HttpPost("{documentId:guid}/register-onchain")]
+    [Authorize(Roles = ApiRoles.RegisterOnChain)]
     public async Task<IActionResult> RegisterOnChain(Guid documentId, CancellationToken ct)
     {
         var existingDoc = await _db.Documents.FirstOrDefaultAsync(x => x.Id == documentId, ct);
@@ -120,6 +134,7 @@ public sealed class DocumentsController : ControllerBase
     }
 
     [HttpPost("{documentId:guid}/validate")]
+    [Authorize(Roles = ApiRoles.ValidateDocuments)]
     public async Task<IActionResult> Validate(Guid documentId, CancellationToken ct)
     {
         var doc = await _db.Documents
@@ -133,7 +148,6 @@ public sealed class DocumentsController : ControllerBase
 
         await _db.SaveChangesAsync(ct);
 
-        // verificăm dacă toate documentele transportului sunt Verified
         var allDocs = await _db.Documents
             .Where(x => x.TransportId == doc.TransportId)
             .ToListAsync(ct);
@@ -160,6 +174,7 @@ public sealed class DocumentsController : ControllerBase
     }
 
     [HttpPost("{documentId:guid}/reject")]
+    [Authorize(Roles = ApiRoles.ValidateDocuments)]
     public async Task<IActionResult> Reject(Guid documentId, CancellationToken ct)
     {
         var doc = await _db.Documents.FirstOrDefaultAsync(x => x.Id == documentId, ct);

@@ -22,7 +22,7 @@
                         Open Transports
                     </a>
 
-                    @if (User.IsInRole(Roles.Carrier) || User.IsInRole(Roles.Administrator))
+                    @if (User.IsInRole(Roles.Shipper) || User.IsInRole(Roles.Administrator))
                     {
                         <a asp-page="/CreateTransport" class="btn btn-success btn-lg dashboard-action-btn">
                             Create Transport

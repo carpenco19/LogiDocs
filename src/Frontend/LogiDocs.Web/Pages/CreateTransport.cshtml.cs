@@ -8,7 +8,7 @@ using System.Net.Http.Json;
 
 namespace LogiDocs.Web.Pages;
 
-[Authorize(Roles = $"{Roles.Carrier},{Roles.Administrator}")]
+[Authorize(Roles = $"{Roles.Shipper},{Roles.Administrator}")]
 public sealed class CreateTransportModel : PageModel
 {
     private readonly IHttpClientFactory _factory;
@@ -28,16 +28,16 @@ public sealed class CreateTransportModel : PageModel
 
     public sealed class InputModel
     {
-        [Required(ErrorMessage = "ReferenceNo este obligatoriu.")]
-        [StringLength(50, ErrorMessage = "ReferenceNo este prea lung.")]
+        [Required(ErrorMessage = "ReferenceNo is required.")]
+        [StringLength(50, ErrorMessage = "ReferenceNo is too long.")]
         public string ReferenceNo { get; set; } = "";
 
-        [Required(ErrorMessage = "Origin este obligatoriu.")]
-        [StringLength(100, ErrorMessage = "Origin este prea lung.")]
+        [Required(ErrorMessage = "Origin is required.")]
+        [StringLength(100, ErrorMessage = "Origin is too long.")]
         public string Origin { get; set; } = "";
 
-        [Required(ErrorMessage = "Destination este obligatoriu.")]
-        [StringLength(100, ErrorMessage = "Destination este prea lung.")]
+        [Required(ErrorMessage = "Destination is required.")]
+        [StringLength(100, ErrorMessage = "Destination is too long.")]
         public string Destination { get; set; } = "";
     }
 
@@ -68,9 +68,8 @@ public sealed class CreateTransportModel : PageModel
                 return Page();
             }
 
-            // API-ul tău întoarce: "guid"
-            var raw = await resp.Content.ReadAsStringAsync();     
-            var idText = raw.Trim().Trim('"');                   
+            var raw = await resp.Content.ReadAsStringAsync();
+            var idText = raw.Trim().Trim('"');
 
             if (!Guid.TryParse(idText, out var id))
             {

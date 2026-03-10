@@ -13,10 +13,10 @@
             <p class="text-muted mb-0">Monitor transport records and document progress</p>
         </div>
 
-        @if (User.IsInRole(Roles.Carrier) || User.IsInRole(Roles.Administrator))
+        @if (User.IsInRole(Roles.Shipper) || User.IsInRole(Roles.Administrator))
         {
             <a asp-page="/CreateTransport" class="btn btn-success">
-                Add Shipping
+                Create Transport
             </a>
         }
     </div>
