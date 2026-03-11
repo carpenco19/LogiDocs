@@ -4,15 +4,53 @@
 
 @{
     ViewData["Title"] = "Dashboard";
+
+    var currentRole = "User";
+    var roleDescription = "Authenticated user";
+    var roleBadgeClass = "bg-secondary";
+
+    if (User.IsInRole(Roles.Administrator))
+    {
+        currentRole = "Administrator";
+        roleDescription = "Full access to configuration, monitoring, and operational workflows.";
+        roleBadgeClass = "bg-dark";
+    }
+    else if (User.IsInRole(Roles.CustomsAuthority))
+    {
+        currentRole = "Customs Authority";
+        roleDescription = "Validation of authenticity and customs-side verification workflows.";
+        roleBadgeClass = "bg-danger";
+    }
+    else if (User.IsInRole(Roles.CustomsBroker))
+    {
+        currentRole = "Customs Broker";
+        roleDescription = "Verification of documents and customs preparation activities.";
+        roleBadgeClass = "bg-warning text-dark";
+    }
+    else if (User.IsInRole(Roles.Carrier))
+    {
+        currentRole = "Carrier";
+        roleDescription = "Transport execution and transport document handling.";
+        roleBadgeClass = "bg-info text-dark";
+    }
+    else if (User.IsInRole(Roles.Shipper))
+    {
+        currentRole = "Shipper";
+        roleDescription = "Creation of transports and upload of commercial documents.";
+        roleBadgeClass = "bg-success";
+    }
 }
 
 <div class="app-page dashboard-home-page">
-    <section class="dashboard-hero mb-4">
+    <section class="dashboard-hero dashboard-hero--refined mb-4">
         <div class="dashboard-hero-overlay"></div>
-        <div class="dashboard-hero-content">
-            <div class="dashboard-hero-text">
+
+        <div class="dashboard-hero-content dashboard-hero-content--refined">
+            <div class="dashboard-hero-text dashboard-hero-text--refined">
                 <div class="hero-badge mb-3">Logistics Document Platform</div>
+
                 <h1 class="dashboard-hero-title">LogiDocs Dashboard</h1>
+
                 <p class="dashboard-hero-subtitle">
                     Monitor transports, track document progress, and manage validation workflows in one place.
                 </p>
@@ -33,27 +71,53 @@
                         Refresh Dashboard
                     </a>
                 </div>
+
+                <div class="hero-inline-highlights">
+                    <div class="hero-inline-highlight">
+                        <span class="hero-inline-label">Current Role</span>
+                        <strong>@currentRole</strong>
+                    </div>
+
+                    <div class="hero-inline-highlight">
+                        <span class="hero-inline-label">Transports</span>
+                        <strong>@Model.TotalTransports</strong>
+                    </div>
+
+                    <div class="hero-inline-highlight">
+                        <span class="hero-inline-label">Verification</span>
+                        <strong>@Model.VerificationPercent%</strong>
+                    </div>
+                </div>
             </div>
 
-            <div class="hero-side-card">
+            <div class="hero-side-card hero-side-card--refined">
                 <div class="hero-side-card-inner">
-                    <div class="hero-side-label">System Overview</div>
-                    <div class="hero-side-value">@Model.TotalTransports</div>
-                    <div class="hero-side-text">active transport records in the system</div>
+                    <div class="hero-side-label">Role Overview</div>
+                    <div class="hero-side-title hero-side-title--compact">@currentRole</div>
 
-                    <div class="hero-mini-stats mt-4">
-                        <div class="hero-mini-stat">
-                            <span>Verified</span>
-                            <strong>@Model.VerifiedDocuments</strong>
-                        </div>
-                        <div class="hero-mini-stat">
-                            <span>Rejected</span>
-                            <strong>@Model.RejectedDocuments</strong>
-                        </div>
-                        <div class="hero-mini-stat">
-                            <span>Progress</span>
-                            <strong>@Model.VerificationPercent%</strong>
-                        </div>
+                    <p class="hero-side-text">
+                        @roleDescription
+                    </p>
+
+                    <div class="hero-role-pill-row">
+                        @if (User.IsInRole(Roles.Shipper) || User.IsInRole(Roles.Administrator))
+                        {
+                            <span class="hero-role-pill">Create transport</span>
+                        }
+
+                        @if (User.IsInRole(Roles.Carrier) || User.IsInRole(Roles.Administrator))
+                        {
+                            <span class="hero-role-pill">Manage documents</span>
+                        }
+
+                        @if (User.IsInRole(Roles.CustomsBroker) || User.IsInRole(Roles.CustomsAuthority) || User.IsInRole(Roles.Administrator))
+                        {
+                            <span class="hero-role-pill">Review workflow</span>
+                        }
+                    </div>
+
+                    <div class="hero-role-note">
+                        Access to pages and actions is displayed according to the role assigned to your account.
                     </div>
                 </div>
             </div>
@@ -103,6 +167,69 @@
             </div>
         </div>
     </section>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+            <section class="dashboard-card h-100">
+                <div class="dashboard-card-header">
+                    <div>
+                        <h5 class="mb-1">Current Role</h5>
+                        <p class="text-muted mb-0">The active role assigned to your account</p>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <span class="badge @roleBadgeClass px-3 py-2 fs-6">@currentRole</span>
+                    <p class="text-muted mt-3 mb-0">@roleDescription</p>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-7">
+            <section class="dashboard-card h-100">
+                <div class="dashboard-card-header">
+                    <div>
+                        <h5 class="mb-1">Role-Based Quick Actions</h5>
+                        <p class="text-muted mb-0">Available actions based on your assigned role</p>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <a asp-page="/Transports" class="btn btn-outline-primary">
+                        View Transports
+                    </a>
+
+                    @if (User.IsInRole(Roles.Shipper) || User.IsInRole(Roles.Administrator))
+                    {
+                        <a asp-page="/CreateTransport" class="btn btn-success">
+                            Create Transport
+                        </a>
+                    }
+
+                    @if (User.IsInRole(Roles.Carrier) || User.IsInRole(Roles.Administrator))
+                    {
+                        <a asp-page="/Transports" class="btn btn-outline-info">
+                            Manage Transport Documents
+                        </a>
+                    }
+
+                    @if (User.IsInRole(Roles.CustomsBroker) || User.IsInRole(Roles.CustomsAuthority) || User.IsInRole(Roles.Administrator))
+                    {
+                        <a asp-page="/Transports" class="btn btn-outline-warning">
+                            Review Verification Flow
+                        </a>
+                    }
+
+                    @if (User.IsInRole(Roles.Administrator))
+                    {
+                        <a asp-page="/Privacy" class="btn btn-outline-dark">
+                            Open Admin Overview
+                        </a>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
 
     <section class="dashboard-card mb-4">
         <div class="dashboard-card-header">
@@ -197,68 +324,119 @@
             </div>
         }
     </section>
-
-    <div class="row g-4">
-        <div class="col-lg-6">
-            <section class="dashboard-card h-100">
-                <div class="dashboard-card-header">
-                    <div>
-                        <h5 class="mb-1">System Status</h5>
-                        <p class="text-muted mb-0">Current operational state of the platform</p>
-                    </div>
-                </div>
-
-                <div class="status-grid mt-3">
-                    <div class="status-tile">
-                        <div class="status-label">Transport Workflow</div>
-                        <div class="status-value status-ok">Operational</div>
-                    </div>
-
-                    <div class="status-tile">
-                        <div class="status-label">Document Verification</div>
-                        <div class="status-value status-ok">Active</div>
-                    </div>
-
-                    <div class="status-tile">
-                        <div class="status-label">Blockchain Registration</div>
-                        <div class="status-value status-warn">Simulated Mode</div>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="col-lg-6">
-            <section class="dashboard-card h-100">
-                <div class="dashboard-card-header">
-                    <div>
-                        <h5 class="mb-1">Quick Summary</h5>
-                        <p class="text-muted mb-0">A short overview of the current system data</p>
-                    </div>
-                </div>
-
-                <div class="summary-list mt-3">
-                    <div class="summary-item">
-                        <span>Total transport records</span>
-                        <strong>@Model.TotalTransports</strong>
-                    </div>
-                    <div class="summary-item">
-                        <span>Total documents</span>
-                        <strong>@Model.TotalDocuments</strong>
-                    </div>
-                    <div class="summary-item">
-                        <span>Verified documents</span>
-                        <strong>@Model.VerifiedDocuments</strong>
-                    </div>
-                    <div class="summary-item">
-                        <span>Rejected documents</span>
-                        <strong>@Model.RejectedDocuments</strong>
-                    </div>
-                    <div class="summary-item">
-                        <span>Tampered documents</span>
-                        <strong>@Model.TamperedDocuments</strong>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </div>
 </div>
+
+<style>
+    .dashboard-hero--refined {
+        min-height: 0;
+    }
+
+    .dashboard-hero-content--refined {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+        align-items: center;
+        gap: 28px;
+        min-height: 0;
+    }
+
+    .dashboard-hero-text--refined {
+        padding-right: 12px;
+    }
+
+    .hero-inline-highlights {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 26px;
+    }
+
+    .hero-inline-highlight {
+        min-width: 150px;
+        padding: 16px 18px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.10);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(8px);
+    }
+
+    .hero-inline-label {
+        display: block;
+        color: rgba(255,255,255,0.72);
+        font-size: 0.84rem;
+        margin-bottom: 6px;
+    }
+
+    .hero-inline-highlight strong {
+        color: #fff;
+        font-size: 1.15rem;
+        font-weight: 800;
+    }
+
+    .hero-side-card--refined {
+        align-self: center;
+    }
+
+    .hero-side-title--compact {
+        font-size: 2.1rem;
+        line-height: 1.05;
+        margin-bottom: 12px;
+    }
+
+    .hero-role-pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+    }
+
+    .hero-role-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 38px;
+        padding: 0 14px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.10);
+        border: 1px solid rgba(255,255,255,0.12);
+        color: #fff;
+        font-size: 0.88rem;
+        font-weight: 700;
+    }
+
+    .hero-role-note {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255,255,255,0.12);
+        color: rgba(255,255,255,0.76);
+        font-size: 0.94rem;
+        line-height: 1.65;
+    }
+
+    @@media (max-width: 991.98px) {
+        .dashboard-hero-content--refined {
+            grid-template-columns: 1fr;
+        }
+
+        .dashboard-hero-text--refined {
+            padding-right: 0;
+        }
+
+        .hero-side-title--compact {
+            font-size: 1.8rem;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .hero-inline-highlights {
+            flex-direction: column;
+        }
+
+        .hero-inline-highlight {
+            width: 100%;
+        }
+
+        .hero-role-pill {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>

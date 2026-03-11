@@ -4,135 +4,662 @@
 
 @{
     ViewData["Title"] = "Transports";
+
+    var totalItems = Model.Items?.Count ?? 0;
+    var multimodalCount = Model.Items?.Count(x => x.IsMultimodal) ?? 0;
+    var singleModeCount = totalItems - multimodalCount;
+    var totalDocs = Model.Items?.Sum(x => x.DocumentsCount) ?? 0;
+    var verifiedDocs = Model.Items?.Sum(x => x.VerifiedDocuments) ?? 0;
+    var verificationPercent = totalDocs == 0 ? 0 : (int)Math.Round((double)verifiedDocs * 100 / totalDocs);
 }
 
-<div class="app-page">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="display-6 fw-bold mb-1">Transports</h1>
-            <p class="text-muted mb-0">Monitor transport records and document progress</p>
+<div class="transports-page">
+    <section class="transports-hero">
+        <div class="transports-hero__overlay"></div>
+
+        <div class="transports-hero__content">
+            <div class="transports-hero__left">
+                <div class="transports-badge">Transport registry</div>
+
+                <h1>Transports</h1>
+
+                <p class="transports-subtitle">
+                    Monitor transport records, track document progress, and identify single-mode or multimodal routes across the platform.
+                </p>
+
+                <div class="transports-actions">
+                    @if (User.IsInRole(Roles.Shipper) || User.IsInRole(Roles.Administrator))
+                    {
+                        <a asp-page="/CreateTransport" class="btn btn-success btn-lg transports-action-btn">
+                            Create Transport
+                        </a>
+                    }
+
+                    <a asp-page="/Index" class="btn btn-outline-light btn-lg transports-action-btn">
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="transports-hero__right">
+                <div class="hero-summary-card">
+                    <div class="hero-summary-label">Transport Overview</div>
+                    <div class="hero-summary-value">@totalItems</div>
+                    <div class="hero-summary-text">registered transport records</div>
+
+                    <div class="hero-mini-stats">
+                        <div class="hero-mini-stat">
+                            <span>Multimodal</span>
+                            <strong>@multimodalCount</strong>
+                        </div>
+                        <div class="hero-mini-stat">
+                            <span>Single mode</span>
+                            <strong>@singleModeCount</strong>
+                        </div>
+                        <div class="hero-mini-stat">
+                            <span>Documents</span>
+                            <strong>@totalDocs</strong>
+                        </div>
+                        <div class="hero-mini-stat">
+                            <span>Verified</span>
+                            <strong>@verificationPercent%</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="transports-stats-strip">
+        <div class="strip-stat-card">
+            <div class="strip-stat-label">Total Transports</div>
+            <div class="strip-stat-value">@totalItems</div>
         </div>
 
-        @if (User.IsInRole(Roles.Shipper) || User.IsInRole(Roles.Administrator))
-        {
-            <a asp-page="/CreateTransport" class="btn btn-success">
-                Create Transport
-            </a>
-        }
-    </div>
+        <div class="strip-stat-card">
+            <div class="strip-stat-label">Multimodal</div>
+            <div class="strip-stat-value text-primary">@multimodalCount</div>
+        </div>
+
+        <div class="strip-stat-card">
+            <div class="strip-stat-label">Single mode</div>
+            <div class="strip-stat-value">@singleModeCount</div>
+        </div>
+
+        <div class="strip-stat-card">
+            <div class="strip-stat-label">Total Documents</div>
+            <div class="strip-stat-value">@totalDocs</div>
+        </div>
+
+        <div class="strip-stat-card">
+            <div class="strip-stat-label">Verification</div>
+            <div class="strip-stat-value text-success">@verificationPercent%</div>
+        </div>
+    </section>
 
     @if (Model.Error != null)
     {
-        <div class="alert alert-danger shadow-sm">
-            @Model.Error
+        <div class="modern-alert modern-alert-danger">
+            <strong>Load failed.</strong>
+            <span>@Model.Error</span>
         </div>
     }
     else if (Model.Items == null || Model.Items.Count == 0)
     {
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <p class="text-muted mb-0">No transports available.</p>
+        <section class="transports-card">
+            <div class="empty-state">
+                <div class="empty-state-icon">🚚</div>
+                <h6>No transports available</h6>
+                <p class="text-muted mb-0">Create the first transport record to begin the logistics workflow.</p>
             </div>
-        </div>
+        </section>
     }
     else
     {
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Transport List</h5>
-                    <span class="text-muted">@Model.Items.Count total</span>
+        <section class="transports-card">
+            <div class="transports-card-header">
+                <div>
+                    <h5 class="mb-1">Transport List</h5>
+                    <p class="text-muted mb-0">Overview of route structure, transport type, document status, and progress</p>
                 </div>
-
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>Reference</th>
-                                <th>Origin</th>
-                                <th>Destination</th>
-                                <th>Status</th>
-                                <th>Docs</th>
-                                <th>Verified</th>
-                                <th>Progress</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var t in Model.Items)
-                            {
-                                var percent = t.DocumentsCount == 0
-                                ? 0
-                                : (int)Math.Round((double)t.VerifiedDocuments * 100 / t.DocumentsCount);
-
-                                <tr>
-                                    <td class="fw-semibold">
-                                        <a asp-page="/TransportDetails" asp-route-id="@t.Id">
-                                            @t.ReferenceNo
-                                        </a>
-                                    </td>
-
-                                    <td>@t.Origin</td>
-                                    <td>@t.Destination</td>
-
-                                    <td>
-                                        @if (t.Status == 0)
-                                        {
-                                            <span class="badge bg-secondary">Draft</span>
-                                        }
-                                        else if (t.Status == 1)
-                                        {
-                                            <span class="badge bg-warning text-dark">In Process</span>
-                                        }
-                                        else if (t.Status == 2)
-                                        {
-                                            <span class="badge bg-success">Completed</span>
-                                        }
-                                        else if (t.Status == 3)
-                                        {
-                                            <span class="badge bg-danger">Cancelled</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-dark">Unknown</span>
-                                        }
-                                    </td>
-
-                                    <td>
-                                        <span class="fw-semibold">@t.DocumentsCount</span>
-                                    </td>
-
-                                    <td>
-                                        <span class="fw-semibold">@t.VerifiedDocuments</span>
-                                    </td>
-
-                                    <td style="min-width: 180px;">
-                                        <div class="small mb-1">@t.VerifiedDocuments / @t.DocumentsCount</div>
-                                        <div class="progress" style="height: 18px;">
-                                            <div class="progress-bar bg-success"
-                                                 role="progressbar"
-                                                 style="width: @percent%;"
-                                                 aria-valuenow="@percent"
-                                                 aria-valuemin="0"
-                                                 aria-valuemax="100">
-                                                @percent%
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    <td>
-                                        <a class="btn btn-primary btn-sm"
-                                           asp-page="/TransportDetails"
-                                           asp-route-id="@t.Id">
-                                            Open
-                                        </a>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+                <div class="table-counter">@Model.Items.Count total</div>
             </div>
-        </div>
+
+            <div class="table-responsive mt-4">
+                <table class="table modern-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Route</th>
+                            <th>Transport Type</th>
+                            <th>Modes</th>
+                            <th>Status</th>
+                            <th>Docs</th>
+                            <th>Progress</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model.Items)
+                        {
+                            var percent = t.DocumentsCount == 0
+                            ? 0
+                            : (int)Math.Round((double)t.VerifiedDocuments * 100 / t.DocumentsCount);
+
+                            <tr>
+                                <td>
+                                    <div class="reference-cell">
+                                        <div class="reference-title">@t.ReferenceNo</div>
+                                        <div class="reference-subtitle">
+                                            @(t.SegmentCount <= 0 ? 1 : t.SegmentCount) segment(s)
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="route-cell">
+                                        <div class="route-main">@t.Origin → @t.Destination</div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    @if (t.IsMultimodal)
+                                    {
+                                        <span class="transport-type-pill transport-type-pill--multi">Multimodal</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="transport-type-pill transport-type-pill--single">Single mode</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <div class="modes-cell">
+                                        <div class="modes-main">
+                                            @(string.IsNullOrWhiteSpace(t.ModesSummary) ? "Unspecified" : t.ModesSummary)
+                                        </div>
+                                        <div class="modes-subtitle">
+                                            @(t.SegmentCount <= 0 ? 1 : t.SegmentCount) stage(s)
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    @if (t.Status == 0)
+                                    {
+                                        <span class="status-pill status-pill--muted">Draft</span>
+                                    }
+                                    else if (t.Status == 1)
+                                    {
+                                        <span class="status-pill status-pill--warning">In Process</span>
+                                    }
+                                    else if (t.Status == 2)
+                                    {
+                                        <span class="status-pill status-pill--success">Completed</span>
+                                    }
+                                    else if (t.Status == 3)
+                                    {
+                                        <span class="status-pill status-pill--danger">Cancelled</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-pill status-pill--dark">Unknown</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <div class="docs-cell">
+                                        <strong>@t.VerifiedDocuments / @t.DocumentsCount</strong>
+                                        <span>verified</span>
+                                    </div>
+                                </td>
+
+                                <td class="progress-cell">
+                                    <div class="progress-text">@percent%</div>
+                                    <div class="progress modern-progress" style="height: 14px;">
+                                        <div class="progress-bar modern-progress-bar"
+                                             role="progressbar"
+                                             style="width: @percent%;"
+                                             aria-valuenow="@percent"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <a class="btn btn-primary btn-sm btn-table-action"
+                                       asp-page="/TransportDetails"
+                                       asp-route-id="@t.Id">
+                                        Open
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
     }
 </div>
+
+<style>
+    .transports-page {
+        padding: 8px 0 24px;
+        background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.10), transparent 24%), radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.08), transparent 20%);
+    }
+
+    .transports-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 32px;
+        margin-bottom: 22px;
+        background: linear-gradient(135deg, #0f172a 0%, #172554 48%, #2563eb 100%);
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.20);
+    }
+
+    .transports-hero__overlay {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.14), transparent 20%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.08), transparent 18%);
+        pointer-events: none;
+    }
+
+    .transports-hero__content {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 24px;
+        padding: 34px;
+        color: #fff;
+    }
+
+    .transports-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 18px;
+        backdrop-filter: blur(8px);
+    }
+
+    .transports-hero h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 14px;
+    }
+
+    .transports-subtitle {
+        max-width: 720px;
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 1.04rem;
+        line-height: 1.8;
+        margin-bottom: 22px;
+    }
+
+    .transports-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .transports-action-btn {
+        min-height: 52px;
+        border-radius: 16px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hero-summary-card {
+        height: 100%;
+        padding: 24px;
+        border-radius: 26px;
+        background: rgba(255, 255, 255, 0.10);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(10px);
+    }
+
+    .hero-summary-label {
+        color: rgba(255,255,255,0.75);
+        font-size: 0.92rem;
+        margin-bottom: 8px;
+    }
+
+    .hero-summary-value {
+        font-size: 3rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .hero-summary-text {
+        color: rgba(255,255,255,0.78);
+        line-height: 1.7;
+        margin-bottom: 4px;
+    }
+
+    .hero-mini-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .hero-mini-stat {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.10);
+        border: 1px solid rgba(255,255,255,0.12);
+    }
+
+        .hero-mini-stat span {
+            display: block;
+            color: rgba(255,255,255,0.72);
+            font-size: 0.86rem;
+            margin-bottom: 4px;
+        }
+
+        .hero-mini-stat strong {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+    .transports-stats-strip {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+
+    .strip-stat-card {
+        border-radius: 22px;
+        padding: 18px 20px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(226, 232, 240, 0.92);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+        backdrop-filter: blur(12px);
+    }
+
+    .strip-stat-label {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+    }
+
+    .strip-stat-value {
+        font-size: 1.95rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1;
+    }
+
+    .modern-alert {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        border-radius: 18px;
+        padding: 14px 18px;
+        margin-bottom: 18px;
+        border: 1px solid transparent;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    }
+
+        .modern-alert strong {
+            font-weight: 800;
+        }
+
+    .modern-alert-danger {
+        background: #fff1f2;
+        border-color: #fecdd3;
+        color: #be123c;
+    }
+
+    .transports-card {
+        border-radius: 28px;
+        padding: 26px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(226, 232, 240, 0.92);
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+        backdrop-filter: blur(12px);
+    }
+
+    .transports-card-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+        .transports-card-header h5 {
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+    .table-counter {
+        display: inline-flex;
+        align-items: center;
+        min-height: 38px;
+        padding: 0 14px;
+        border-radius: 999px;
+        background: #e0ecff;
+        color: #1d4ed8;
+        font-weight: 800;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 36px 18px 10px;
+    }
+
+    .empty-state-icon {
+        font-size: 2.2rem;
+        margin-bottom: 12px;
+    }
+
+    .empty-state h6 {
+        font-size: 1.08rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 8px;
+    }
+
+    .modern-table thead th {
+        border-bottom: 1px solid #e2e8f0;
+        color: #64748b;
+        font-size: 0.88rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding-bottom: 14px;
+    }
+
+    .modern-table tbody td {
+        padding-top: 18px;
+        padding-bottom: 18px;
+        border-color: #eef2f7;
+        vertical-align: middle;
+    }
+
+    .reference-cell,
+    .route-cell,
+    .modes-cell,
+    .docs-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .reference-title,
+    .route-main,
+    .modes-main {
+        color: #0f172a;
+        font-weight: 800;
+        line-height: 1.4;
+    }
+
+    .reference-subtitle,
+    .modes-subtitle,
+    .docs-cell span {
+        color: #94a3b8;
+        font-size: 0.84rem;
+    }
+
+    .transport-type-pill,
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 0 12px;
+        border-radius: 999px;
+        font-size: 0.84rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .transport-type-pill--multi {
+        background: #e0ecff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
+    .transport-type-pill--single {
+        background: #eef2ff;
+        color: #4338ca;
+        border: 1px solid #c7d2fe;
+    }
+
+    .status-pill--success {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-pill--danger {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .status-pill--warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-pill--muted {
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .status-pill--dark {
+        background: #0f172a;
+        color: #ffffff;
+    }
+
+    .docs-cell strong {
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+    .progress-cell {
+        min-width: 180px;
+    }
+
+    .progress-text {
+        font-size: 0.84rem;
+        color: #64748b;
+        margin-bottom: 6px;
+        font-weight: 700;
+    }
+
+    .modern-progress {
+        border-radius: 999px;
+        overflow: hidden;
+        background: #e2e8f0;
+    }
+
+    .modern-progress-bar {
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    }
+
+    .btn-table-action {
+        border-radius: 12px;
+        font-weight: 700;
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    @@media (max-width: 1199.98px) {
+        .transports-stats-strip {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @@media (max-width: 991.98px) {
+        .transports-hero__content {
+            grid-template-columns: 1fr;
+            padding: 26px;
+        }
+
+        .transports-card-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .transports-hero h1 {
+            font-size: 2rem;
+        }
+
+        .hero-summary-value {
+            font-size: 2.4rem;
+        }
+
+        .hero-mini-stats {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .transports-stats-strip {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .transports-card,
+        .strip-stat-card {
+            padding: 20px;
+            border-radius: 22px;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .transports-hero__content {
+            padding: 20px;
+        }
+
+        .transports-actions {
+            flex-direction: column;
+        }
+
+        .transports-action-btn {
+            width: 100%;
+        }
+
+        .transports-stats-strip {
+            grid-template-columns: 1fr;
+        }
+
+        .btn-table-action {
+            width: 100%;
+        }
+    }
+</style>

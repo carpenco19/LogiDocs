@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 
 namespace LogiDocs.Web.Pages;
 
-[Authorize(Roles = "Shipper,Carrier,CustomsBroker,CustomsAuthority,Administrator")]
+[Authorize]
 public sealed class TransportsModel : PageModel
 {
     private readonly IHttpClientFactory _factory;
@@ -44,6 +44,12 @@ public sealed class TransportsModel : PageModel
         public int DocumentsCount { get; set; }
         public int VerifiedDocuments { get; set; }
 
+        public int SegmentCount { get; set; }
+        public bool IsMultimodal { get; set; }
+        public string? ModesSummary { get; set; }
+
+        public List<TransportSegmentRow> Segments { get; set; } = new();
+
         public string StatusName => Status switch
         {
             0 => "Draft",
@@ -52,5 +58,16 @@ public sealed class TransportsModel : PageModel
             3 => "Cancelled",
             _ => "Unknown"
         };
+    }
+
+    public sealed class TransportSegmentRow
+    {
+        public Guid Id { get; set; }
+        public int OrderNo { get; set; }
+        public int Mode { get; set; }
+        public string ModeName { get; set; } = string.Empty;
+        public string Origin { get; set; } = string.Empty;
+        public string Destination { get; set; } = string.Empty;
+        public string? OperatorName { get; set; }
     }
 }

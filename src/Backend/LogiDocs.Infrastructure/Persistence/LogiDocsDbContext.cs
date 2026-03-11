@@ -8,12 +8,10 @@ public sealed class LogiDocsDbContext : DbContext, ILogiDocsDbContext
 {
     public LogiDocsDbContext(DbContextOptions<LogiDocsDbContext> options) : base(options) { }
 
-    // IQueryable pentru Application (fără DbSet în interfață)
     public IQueryable<Transport> Transports => Set<Transport>();
     public IQueryable<Document> Documents => Set<Document>();
 
-    // Metodă generică pentru add (folosită din Application)
-    public new  void Add<T>(T entity) where T : class
+    public new void Add<T>(T entity) where T : class
     {
         Set<T>().Add(entity);
     }
@@ -33,11 +31,32 @@ public sealed class LogiDocsDbContext : DbContext, ILogiDocsDbContext
 
             e.Property(x => x.CreatedAtUtc).IsRequired();
             e.Property(x => x.Status).IsRequired();
+            e.Property(x => x.CreatedByUserId).IsRequired();
 
             e.HasMany(x => x.Documents)
              .WithOne(d => d.Transport!)
              .HasForeignKey(d => d.TransportId)
              .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasMany(x => x.Segments)
+             .WithOne(s => s.Transport!)
+             .HasForeignKey(s => s.TransportId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TransportSegment>(e =>
+        {
+            e.ToTable("TransportSegments");
+            e.HasKey(x => x.Id);
+
+            e.Property(x => x.OrderNo).IsRequired();
+            e.Property(x => x.Mode).IsRequired();
+
+            e.Property(x => x.Origin).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Destination).HasMaxLength(128).IsRequired();
+            e.Property(x => x.OperatorName).HasMaxLength(128);
+
+            e.HasIndex(x => new { x.TransportId, x.OrderNo }).IsUnique();
         });
 
         modelBuilder.Entity<Document>(e =>
@@ -56,7 +75,7 @@ public sealed class LogiDocsDbContext : DbContext, ILogiDocsDbContext
             e.Property(x => x.BlockchainTxId).HasMaxLength(256);
 
             e.Property(x => x.RegisteredOnChainAtUtc);
-           
+
             e.Property(x => x.ChainStatus)
                 .HasConversion<string>()
                 .HasMaxLength(32);

@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
 using LogiDocs.Contracts.Transports;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LogiDocs.Web.Pages;
 
-public class IndexModel : PageModel
+[Authorize]
+public sealed class IndexModel : PageModel
 {
     private readonly IHttpClientFactory _factory;
 

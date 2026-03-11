@@ -25,10 +25,17 @@ public sealed class TransportsController : ControllerBase
     [HttpPost]
     [Authorize(Roles = ApiRoles.CreateTransport)]
     public async Task<ActionResult<Guid>> Create(
-        [FromBody] CreateTransportRequest req,
-        [FromServices] CreateTransportUseCase uc,
-        CancellationToken ct)
+      [FromBody] CreateTransportRequest req,
+      [FromServices] CreateTransportUseCase uc,
+      CancellationToken ct)
     {
+        var userIdText = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (!Guid.TryParse(userIdText, out var userId))
+            return Forbid();
+
+        req.CreatedByUserId = userId;
+
         var id = await uc.ExecuteAsync(req, ct);
         return Ok(id);
     }

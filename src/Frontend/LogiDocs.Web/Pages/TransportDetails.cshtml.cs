@@ -1,13 +1,13 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using LogiDocs.Contracts.Documents;
+using LogiDocs.Web.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
-using System.Security.Claims;
-using LogiDocs.Contracts.Documents;
 
 namespace LogiDocs.Web.Pages;
 
-[Authorize]
+[Authorize(Roles = $"{Roles.Shipper},{Roles.Carrier},{Roles.CustomsBroker},{Roles.CustomsAuthority},{Roles.Administrator}")]
 public sealed class TransportDetailsModel : PageModel
 {
     private readonly IHttpClientFactory _factory;
@@ -22,6 +22,14 @@ public sealed class TransportDetailsModel : PageModel
 
     public string? Error { get; set; }
     public string? TransportRef { get; set; }
+    public string? TransportOrigin { get; set; }
+    public string? TransportDestination { get; set; }
+
+    public int SegmentCount { get; set; }
+    public bool IsMultimodal { get; set; }
+    public string ModesSummary { get; set; } = string.Empty;
+
+    public List<TransportSegmentRow> Segments { get; set; } = new();
     public List<DocumentRow> Documents { get; set; } = new();
 
     [TempData]
@@ -48,40 +56,27 @@ public sealed class TransportDetailsModel : PageModel
     public DocumentVerificationDto? VerificationResult { get; set; }
 
     public bool CanUpload =>
-        User.IsInRole("Shipper") ||
-        User.IsInRole("Carrier") ||
-        User.IsInRole("Administrator");
+        User.IsInRole(Roles.Shipper) ||
+        User.IsInRole(Roles.Carrier) ||
+        User.IsInRole(Roles.CustomsBroker) ||
+        User.IsInRole(Roles.Administrator);
 
     public bool CanRegister =>
-        User.IsInRole("CustomsBroker") ||
-        User.IsInRole("Administrator");
+        User.IsInRole(Roles.CustomsAuthority) ||
+        User.IsInRole(Roles.Administrator);
 
     public bool CanVerify =>
-        User.IsInRole("CustomsAuthority") ||
-        User.IsInRole("Administrator");
+        User.IsInRole(Roles.CustomsBroker) ||
+        User.IsInRole(Roles.CustomsAuthority) ||
+        User.IsInRole(Roles.Administrator);
 
     public bool CanValidate =>
-        User.IsInRole("CustomsAuthority") ||
-        User.IsInRole("Administrator");
+        User.IsInRole(Roles.CustomsAuthority) ||
+        User.IsInRole(Roles.Administrator);
 
     public async Task OnGetAsync()
     {
-        try
-        {
-            var client = _factory.CreateClient("LogiDocsApi");
-
-            var transports = await client.GetFromJsonAsync<List<TransportRow>>("api/transports");
-            var transport = transports?.FirstOrDefault(x => x.Id == Id);
-
-            TransportRef = transport?.ReferenceNo ?? "Unknown";
-
-            var docs = await client.GetFromJsonAsync<List<DocumentRow>>($"api/documents/by-transport/{Id}");
-            Documents = docs ?? new List<DocumentRow>();
-        }
-        catch (Exception ex)
-        {
-            Error = ex.Message;
-        }
+        await LoadPageDataAsync();
     }
 
     public async Task<IActionResult> OnPostUploadAsync()
@@ -92,22 +87,14 @@ public sealed class TransportDetailsModel : PageModel
         if (Id == Guid.Empty)
         {
             Error = "Invalid transport.";
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
         if (UploadFile == null || UploadFile.Length == 0)
         {
             Error = "The file is required.";
-            await OnGetAsync();
-            return Page();
-        }
-
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
-        {
-            Error = "You are not authenticated. Please log in.";
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
@@ -119,7 +106,6 @@ public sealed class TransportDetailsModel : PageModel
 
             content.Add(new StringContent(Id.ToString()), "TransportId");
             content.Add(new StringContent(Type.ToString()), "Type");
-            content.Add(new StringContent(userId.ToString()), "UploadedByUserId");
 
             await using var stream = UploadFile.OpenReadStream();
             var fileContent = new StreamContent(stream);
@@ -138,7 +124,7 @@ public sealed class TransportDetailsModel : PageModel
             {
                 var body = await resp.Content.ReadAsStringAsync();
                 Error = $"Upload failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
-                await OnGetAsync();
+                await LoadPageDataAsync();
                 return Page();
             }
 
@@ -148,7 +134,7 @@ public sealed class TransportDetailsModel : PageModel
         catch (Exception ex)
         {
             Error = ex.Message;
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
     }
@@ -161,7 +147,7 @@ public sealed class TransportDetailsModel : PageModel
         if (RegisterDocumentId == Guid.Empty)
         {
             Error = "Invalid document.";
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
@@ -175,7 +161,7 @@ public sealed class TransportDetailsModel : PageModel
             {
                 var body = await resp.Content.ReadAsStringAsync();
                 Error = $"Registration failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
-                await OnGetAsync();
+                await LoadPageDataAsync();
                 return Page();
             }
 
@@ -185,7 +171,7 @@ public sealed class TransportDetailsModel : PageModel
         catch (Exception ex)
         {
             Error = ex.Message;
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
     }
@@ -198,7 +184,7 @@ public sealed class TransportDetailsModel : PageModel
         if (VerifyDocumentId == Guid.Empty)
         {
             Error = "Invalid document.";
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
@@ -212,18 +198,12 @@ public sealed class TransportDetailsModel : PageModel
             if (result == null)
             {
                 Error = "The verification result could not be obtained.";
-                await OnGetAsync();
+                await LoadPageDataAsync();
                 return Page();
             }
 
             VerificationResult = result;
-
-            var transports = await client.GetFromJsonAsync<List<TransportRow>>("api/transports");
-            var transport = transports?.FirstOrDefault(x => x.Id == Id);
-            TransportRef = transport?.ReferenceNo ?? "Unknown";
-
-            var docs = await client.GetFromJsonAsync<List<DocumentRow>>($"api/documents/by-transport/{Id}");
-            Documents = docs ?? new List<DocumentRow>();
+            await LoadTransportDataAsync();
 
             SuccessMessage = "Document verification completed.";
             return Page();
@@ -231,7 +211,7 @@ public sealed class TransportDetailsModel : PageModel
         catch (Exception ex)
         {
             Error = ex.Message;
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
     }
@@ -244,7 +224,7 @@ public sealed class TransportDetailsModel : PageModel
         if (ValidateDocumentId == Guid.Empty)
         {
             Error = "Invalid document.";
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
@@ -258,7 +238,7 @@ public sealed class TransportDetailsModel : PageModel
             {
                 var body = await resp.Content.ReadAsStringAsync();
                 Error = $"Validation failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
-                await OnGetAsync();
+                await LoadPageDataAsync();
                 return Page();
             }
 
@@ -268,7 +248,7 @@ public sealed class TransportDetailsModel : PageModel
         catch (Exception ex)
         {
             Error = ex.Message;
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
     }
@@ -281,7 +261,7 @@ public sealed class TransportDetailsModel : PageModel
         if (RejectDocumentId == Guid.Empty)
         {
             Error = "Invalid document.";
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
@@ -295,7 +275,7 @@ public sealed class TransportDetailsModel : PageModel
             {
                 var body = await resp.Content.ReadAsStringAsync();
                 Error = $"Rejection failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
-                await OnGetAsync();
+                await LoadPageDataAsync();
                 return Page();
             }
 
@@ -305,8 +285,63 @@ public sealed class TransportDetailsModel : PageModel
         catch (Exception ex)
         {
             Error = ex.Message;
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
+        }
+    }
+
+    private async Task LoadPageDataAsync()
+    {
+        await LoadTransportDataAsync();
+        VerificationResult = null;
+    }
+
+    private async Task LoadTransportDataAsync()
+    {
+        try
+        {
+            var client = _factory.CreateClient("LogiDocsApi");
+
+            var transports = await client.GetFromJsonAsync<List<TransportRow>>("api/transports");
+            var transport = transports?.FirstOrDefault(x => x.Id == Id);
+
+            TransportRef = transport?.ReferenceNo ?? "Unknown";
+            TransportOrigin = transport?.Origin ?? string.Empty;
+            TransportDestination = transport?.Destination ?? string.Empty;
+
+            SegmentCount = transport?.SegmentCount ?? 0;
+            IsMultimodal = transport?.IsMultimodal ?? false;
+            ModesSummary = transport?.ModesSummary ?? string.Empty;
+
+            Segments = transport?.Segments ?? new List<TransportSegmentRow>();
+
+            // fallback pentru transporturile vechi sau pentru cele fără segmente încărcate
+            if (Segments.Count == 0 && transport != null)
+            {
+                Segments = new List<TransportSegmentRow>
+                {
+                    new()
+                    {
+                        OrderNo = 1,
+                        Mode = 0,
+                        ModeName = "Unspecified",
+                        Origin = transport.Origin ?? string.Empty,
+                        Destination = transport.Destination ?? string.Empty,
+                        OperatorName = null
+                    }
+                };
+
+                SegmentCount = 1;
+                IsMultimodal = false;
+                ModesSummary = "Unspecified";
+            }
+
+            var docs = await client.GetFromJsonAsync<List<DocumentRow>>($"api/documents/by-transport/{Id}");
+            Documents = docs ?? new List<DocumentRow>();
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
         }
     }
 
@@ -314,6 +349,28 @@ public sealed class TransportDetailsModel : PageModel
     {
         public Guid Id { get; set; }
         public string? ReferenceNo { get; set; }
+        public string? Origin { get; set; }
+        public string? Destination { get; set; }
+
+        public int SegmentCount { get; set; }
+        public bool IsMultimodal { get; set; }
+        public string? ModesSummary { get; set; }
+
+        public List<TransportSegmentRow> Segments { get; set; } = new();
+    }
+
+    public sealed class TransportSegmentRow
+    {
+        public Guid Id { get; set; }
+
+        public int OrderNo { get; set; }
+        public int Mode { get; set; }
+        public string ModeName { get; set; } = string.Empty;
+
+        public string Origin { get; set; } = string.Empty;
+        public string Destination { get; set; } = string.Empty;
+
+        public string? OperatorName { get; set; }
     }
 
     public sealed class DocumentRow

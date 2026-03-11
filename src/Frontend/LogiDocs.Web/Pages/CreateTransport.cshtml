@@ -1,39 +1,687 @@
 ﻿@page
 @model LogiDocs.Web.Pages.CreateTransportModel
+
 @{
-    ViewData["Title"] = "Add shipping";
+    ViewData["Title"] = "Create Transport";
+
+    var modeOptionsHtml = string.Join("",
+        Model.ModeOptions.Select(x => $"<option value=\"{x.Value}\">{x.Text}</option>"));
 }
 
-<h2>Adaugă transport</h2>
+<div class="create-transport-page">
+    <section class="create-hero">
+        <div class="create-hero__overlay"></div>
 
-@if (Model.Error != null)
-{
-    <p style="color:red">@Model.Error</p>
-}
+        <div class="create-hero__content">
+            <div class="create-hero__left">
+                <div class="create-badge">Multimodal transport creation</div>
 
-<form method="post">
-    <div class="mb-3">
-        <label class="form-label">Reference</label>
-        <input class="form-control" asp-for="Input.ReferenceNo" />
-        <span class="text-danger" asp-validation-for="Input.ReferenceNo"></span>
+                <h1>Create a new transport</h1>
+
+                <p class="create-subtitle">
+                    Define the transport reference and build the route using one or more segments.
+                    This allows the system to reflect single-mode or multimodal transport flows.
+                </p>
+
+                <div class="create-info-grid">
+                    <div class="create-info-card">
+                        <div class="create-info-label">Step 1</div>
+                        <div class="create-info-title">Reference</div>
+                        <div class="create-info-text">Create the main transport record in the platform.</div>
+                    </div>
+
+                    <div class="create-info-card">
+                        <div class="create-info-label">Step 2</div>
+                        <div class="create-info-title">Segments</div>
+                        <div class="create-info-text">Add one or more route segments and select the transport mode.</div>
+                    </div>
+
+                    <div class="create-info-card">
+                        <div class="create-info-label">Step 3</div>
+                        <div class="create-info-title">Workflow</div>
+                        <div class="create-info-text">Continue with document upload, verification, and validation.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="create-hero__right">
+                <div class="hero-side-panel">
+                    <div class="hero-side-label">What makes it multimodal</div>
+                    <div class="hero-side-value">Multiple Segments</div>
+                    <div class="hero-side-text">
+                        A transport may contain one segment or several segments, each with its own
+                        transport mode, origin, destination, and operator.
+                    </div>
+
+                    <div class="hero-side-tags">
+                        <span class="hero-side-tag">Road</span>
+                        <span class="hero-side-tag">Rail</span>
+                        <span class="hero-side-tag">Sea</span>
+                        <span class="hero-side-tag">Air</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="modern-alert modern-alert-danger">
+            <strong>Create failed.</strong>
+            <span>@Model.Error</span>
+        </div>
+    }
+
+    <section class="create-form-card">
+        <div class="create-form-header">
+            <div>
+                <h5 class="mb-1">Transport Information</h5>
+                <p class="text-muted mb-0">Fill in the reference and define the transport segments.</p>
+            </div>
+            <div class="form-header-pill">Multimodal enabled</div>
+        </div>
+
+        <form method="post" class="create-transport-form">
+            <input type="hidden" asp-for="ReturnUrl" />
+
+            <div asp-validation-summary="ModelOnly" class="validation-summary text-danger" role="alert"></div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <label class="form-label-modern" asp-for="Input.ReferenceNo">Reference Number</label>
+                    <input class="form-control form-control-modern"
+                           asp-for="Input.ReferenceNo"
+                           placeholder="Enter transport reference" />
+                    <span class="text-danger" asp-validation-for="Input.ReferenceNo"></span>
+                </div>
+            </div>
+
+            <div class="segments-section-header">
+                <div>
+                    <h5 class="mb-1">Transport Segments</h5>
+                    <p class="text-muted mb-0">
+                        Add the stages of the route. One segment means single-mode transport, multiple segments mean multimodal transport.
+                    </p>
+                </div>
+
+                <button type="button" class="btn btn-outline-primary btn-add-segment" id="add-segment-btn">
+                    Add Segment
+                </button>
+            </div>
+
+            <div id="segments-container" class="segments-editor-grid">
+                @for (var i = 0; i < Model.Input.Segments.Count; i++)
+                {
+                    <div class="segment-editor-card" data-segment-index="@i">
+                        <div class="segment-editor-top">
+                            <div class="segment-editor-title">Segment <span class="segment-number">@(i + 1)</span></div>
+
+                            @if (i > 0)
+                            {
+                                <button type="button" class="btn-remove-segment" onclick="removeSegment(this)">
+                                    Remove
+                                </button>
+                            }
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-lg-4">
+                                <label class="form-label-modern" asp-for="Input.Segments[i].Mode">Mode</label>
+                                <select class="form-select form-control-modern"
+                                        asp-for="Input.Segments[i].Mode">
+                                    <option value="0">Select mode</option>
+                                    @foreach (var option in Model.ModeOptions)
+                                    {
+                                        <option value="@option.Value">@option.Text</option>
+                                    }
+                                </select>
+                                <span class="text-danger" asp-validation-for="Input.Segments[i].Mode"></span>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <label class="form-label-modern" asp-for="Input.Segments[i].Origin">Origin</label>
+                                <input class="form-control form-control-modern"
+                                       asp-for="Input.Segments[i].Origin"
+                                       placeholder="Segment origin" />
+                                <span class="text-danger" asp-validation-for="Input.Segments[i].Origin"></span>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <label class="form-label-modern" asp-for="Input.Segments[i].Destination">Destination</label>
+                                <input class="form-control form-control-modern"
+                                       asp-for="Input.Segments[i].Destination"
+                                       placeholder="Segment destination" />
+                                <span class="text-danger" asp-validation-for="Input.Segments[i].Destination"></span>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <label class="form-label-modern" asp-for="Input.Segments[i].OperatorName">Operator Name</label>
+                                <input class="form-control form-control-modern"
+                                       asp-for="Input.Segments[i].OperatorName"
+                                       placeholder="Optional operator or carrier name" />
+                                <span class="text-danger" asp-validation-for="Input.Segments[i].OperatorName"></span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="create-form-actions">
+                <button class="btn btn-primary btn-form-primary" type="submit">
+                    Create Transport
+                </button>
+
+                <a class="btn btn-light btn-form-secondary" asp-page="/Transports">
+                    Back to Transports
+                </a>
+            </div>
+        </form>
+    </section>
+</div>
+
+<template id="segment-template">
+    <div class="segment-editor-card" data-segment-index="__index__">
+        <div class="segment-editor-top">
+            <div class="segment-editor-title">Segment <span class="segment-number">__displayIndex__</span></div>
+            <button type="button" class="btn-remove-segment" onclick="removeSegment(this)">
+                Remove
+            </button>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-4">
+                <label class="form-label-modern" for="Input_Segments___index___Mode">Mode</label>
+                <select class="form-select form-control-modern"
+                        id="Input_Segments___index___Mode"
+                        name="Input.Segments[__index__].Mode">
+                    <option value="0">Select mode</option>
+                    @Html.Raw(modeOptionsHtml)
+                </select>
+            </div>
+
+            <div class="col-lg-4">
+                <label class="form-label-modern" for="Input_Segments___index___Origin">Origin</label>
+                <input class="form-control form-control-modern"
+                       id="Input_Segments___index___Origin"
+                       name="Input.Segments[__index__].Origin"
+                       placeholder="Segment origin" />
+            </div>
+
+            <div class="col-lg-4">
+                <label class="form-label-modern" for="Input_Segments___index___Destination">Destination</label>
+                <input class="form-control form-control-modern"
+                       id="Input_Segments___index___Destination"
+                       name="Input.Segments[__index__].Destination"
+                       placeholder="Segment destination" />
+            </div>
+
+            <div class="col-lg-12">
+                <label class="form-label-modern" for="Input_Segments___index___OperatorName">Operator Name</label>
+                <input class="form-control form-control-modern"
+                       id="Input_Segments___index___OperatorName"
+                       name="Input.Segments[__index__].OperatorName"
+                       placeholder="Optional operator or carrier name" />
+            </div>
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label class="form-label">Origin</label>
-        <input class="form-control" asp-for="Input.Origin" />
-        <span class="text-danger" asp-validation-for="Input.Origin"></span>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Destination</label>
-        <input class="form-control" asp-for="Input.Destination" />
-        <span class="text-danger" asp-validation-for="Input.Destination"></span>
-    </div>
-
-    <button class="btn btn-primary" type="submit">Salvează</button>
-    <a class="btn btn-secondary" asp-page="/Transports">Înapoi</a>
-</form>
+</template>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        const segmentsContainer = document.getElementById("segments-container");
+        const segmentTemplate = document.getElementById("segment-template");
+        const addSegmentBtn = document.getElementById("add-segment-btn");
+
+        addSegmentBtn.addEventListener("click", () => {
+            const newIndex = segmentsContainer.querySelectorAll(".segment-editor-card").length;
+            let html = segmentTemplate.innerHTML
+                .replaceAll("__index__", newIndex)
+                .replaceAll("__displayIndex__", newIndex + 1);
+
+            segmentsContainer.insertAdjacentHTML("beforeend", html);
+            reindexSegments();
+        });
+
+        function removeSegment(button) {
+            const cards = segmentsContainer.querySelectorAll(".segment-editor-card");
+            if (cards.length <= 1) {
+                return;
+            }
+
+            const card = button.closest(".segment-editor-card");
+            if (card) {
+                card.remove();
+                reindexSegments();
+            }
+        }
+
+        function reindexSegments() {
+            const cards = segmentsContainer.querySelectorAll(".segment-editor-card");
+
+            cards.forEach((card, index) => {
+                card.setAttribute("data-segment-index", index);
+
+                const number = card.querySelector(".segment-number");
+                if (number) {
+                    number.textContent = index + 1;
+                }
+
+                const removeButton = card.querySelector(".btn-remove-segment");
+                if (removeButton) {
+                    removeButton.style.display = cards.length === 1 ? "none" : "inline-flex";
+                }
+
+                const inputs = card.querySelectorAll("input, select, label, span[data-valmsg-for]");
+                inputs.forEach(el => {
+                    if (el.hasAttribute("name")) {
+                        el.setAttribute(
+                            "name",
+                            el.getAttribute("name").replace(/Input\.Segments\[\d+\]/g, `Input.Segments[${index}]`)
+                        );
+                    }
+
+                    if (el.hasAttribute("id")) {
+                        el.setAttribute(
+                            "id",
+                            el.getAttribute("id").replace(/Input_Segments_\d+/g, `Input_Segments_${index}`)
+                        );
+                    }
+
+                    if (el.tagName.toLowerCase() === "label" && el.hasAttribute("for")) {
+                        el.setAttribute(
+                            "for",
+                            el.getAttribute("for").replace(/Input_Segments_\d+/g, `Input_Segments_${index}`)
+                        );
+                    }
+
+                    if (el.hasAttribute("data-valmsg-for")) {
+                        el.setAttribute(
+                            "data-valmsg-for",
+                            el.getAttribute("data-valmsg-for").replace(/Input\.Segments\[\d+\]/g, `Input.Segments[${index}]`)
+                        );
+                    }
+                });
+            });
+        }
+
+        reindexSegments();
+    </script>
 }
+
+<style>
+    .create-transport-page {
+        padding: 8px 0 28px;
+        background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.10), transparent 24%), radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.08), transparent 20%);
+    }
+
+    .create-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 32px;
+        margin-bottom: 24px;
+        background: linear-gradient(135deg, #0f172a 0%, #172554 46%, #2563eb 100%);
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.20);
+    }
+
+    .create-hero__overlay {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 15% 20%, rgba(255,255,255,0.14), transparent 18%), radial-gradient(circle at 82% 78%, rgba(255,255,255,0.08), transparent 18%);
+        pointer-events: none;
+    }
+
+    .create-hero__content {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 24px;
+        padding: 34px;
+        color: #fff;
+    }
+
+    .create-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 18px;
+        backdrop-filter: blur(8px);
+    }
+
+    .create-hero h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 14px;
+    }
+
+    .create-subtitle {
+        max-width: 720px;
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 1.04rem;
+        line-height: 1.8;
+        margin-bottom: 24px;
+    }
+
+    .create-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+    }
+
+    .create-info-card {
+        padding: 18px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.10);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(8px);
+    }
+
+    .create-info-label {
+        color: rgba(255,255,255,0.72);
+        font-size: 0.84rem;
+        margin-bottom: 8px;
+    }
+
+    .create-info-title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 6px;
+    }
+
+    .create-info-text {
+        color: rgba(255,255,255,0.78);
+        line-height: 1.6;
+        font-size: 0.92rem;
+    }
+
+    .hero-side-panel {
+        height: 100%;
+        padding: 24px;
+        border-radius: 26px;
+        background: rgba(255, 255, 255, 0.10);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(10px);
+    }
+
+    .hero-side-label {
+        color: rgba(255,255,255,0.75);
+        font-size: 0.92rem;
+        margin-bottom: 8px;
+    }
+
+    .hero-side-value {
+        font-size: 2.3rem;
+        font-weight: 800;
+        line-height: 1.05;
+        margin-bottom: 10px;
+    }
+
+    .hero-side-text {
+        color: rgba(255,255,255,0.80);
+        line-height: 1.7;
+        margin-bottom: 18px;
+    }
+
+    .hero-side-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .hero-side-tag {
+        display: inline-flex;
+        align-items: center;
+        min-height: 36px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.10);
+        border: 1px solid rgba(255,255,255,0.12);
+        color: #fff;
+        font-size: 0.86rem;
+        font-weight: 700;
+    }
+
+    .modern-alert {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        border-radius: 18px;
+        padding: 14px 18px;
+        margin-bottom: 18px;
+        border: 1px solid transparent;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    }
+
+        .modern-alert strong {
+            font-weight: 800;
+        }
+
+    .modern-alert-danger {
+        background: #fff1f2;
+        border-color: #fecdd3;
+        color: #be123c;
+    }
+
+    .create-form-card {
+        border-radius: 28px;
+        padding: 28px;
+        background: rgba(255, 255, 255, 0.90);
+        border: 1px solid rgba(226, 232, 240, 0.92);
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+        backdrop-filter: blur(12px);
+    }
+
+    .create-form-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 22px;
+    }
+
+        .create-form-header h5 {
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+    .form-header-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 38px;
+        padding: 0 14px;
+        border-radius: 999px;
+        background: #e0ecff;
+        color: #1d4ed8;
+        font-weight: 800;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .validation-summary {
+        margin-bottom: 18px;
+        border-radius: 16px;
+        padding: 12px 14px;
+        background: #fff1f2;
+        border: 1px solid #fecdd3;
+        color: #be123c;
+    }
+
+        .validation-summary:empty {
+            display: none;
+        }
+
+    .segments-section-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+
+        .segments-section-header h5 {
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+    .btn-add-segment {
+        min-height: 46px;
+        border-radius: 14px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .segments-editor-grid {
+        display: grid;
+        gap: 18px;
+    }
+
+    .segment-editor-card {
+        border-radius: 24px;
+        padding: 22px;
+        background: #f8fbff;
+        border: 1px solid #e2e8f0;
+    }
+
+    .segment-editor-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: center;
+        margin-bottom: 18px;
+    }
+
+    .segment-editor-title {
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 800;
+    }
+
+    .btn-remove-segment {
+        min-height: 38px;
+        padding: 0 12px;
+        border: 1px solid #fecaca;
+        background: #fff;
+        color: #dc2626;
+        border-radius: 12px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .btn-remove-segment:hover {
+            background: #fff5f5;
+        }
+
+    .form-label-modern {
+        display: inline-block;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 8px;
+    }
+
+    .form-control-modern {
+        min-height: 54px;
+        border-radius: 16px;
+        border: 1px solid #dbe3ef;
+        background: rgba(255,255,255,0.96);
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
+        font-size: 1rem;
+    }
+
+        .form-control-modern:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.18);
+        }
+
+    .create-form-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 26px;
+    }
+
+    .btn-form-primary,
+    .btn-form-secondary {
+        min-height: 52px;
+        padding: 0 20px;
+        border-radius: 16px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-form-primary {
+        box-shadow: 0 16px 30px rgba(37, 99, 235, 0.20);
+    }
+
+    .btn-form-secondary {
+        border: 1px solid #dbe3ef;
+        color: #0f172a;
+        background: #fff;
+    }
+
+        .btn-form-secondary:hover {
+            background: #f8fbff;
+            border-color: #bfdbfe;
+            color: #0f172a;
+        }
+
+    @@media (max-width: 1199.98px) {
+        .create-info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 991.98px) {
+        .create-hero__content {
+            grid-template-columns: 1fr;
+            padding: 26px;
+        }
+
+        .create-form-header,
+        .segments-section-header,
+        .segment-editor-top {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .create-hero h1 {
+            font-size: 2rem;
+        }
+
+        .create-form-card,
+        .segment-editor-card {
+            padding: 22px;
+            border-radius: 22px;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .create-hero__content {
+            padding: 20px;
+        }
+
+        .create-form-actions {
+            flex-direction: column;
+        }
+
+        .btn-form-primary,
+        .btn-form-secondary,
+        .btn-add-segment {
+            width: 100%;
+        }
+    }
+</style>
