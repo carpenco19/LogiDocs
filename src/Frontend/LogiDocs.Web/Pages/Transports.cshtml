@@ -147,7 +147,7 @@
                             : (int)Math.Round((double)t.VerifiedDocuments * 100 / t.DocumentsCount);
 
                             <tr>
-                                <td>
+                                <td class="reference-col">
                                     <div class="reference-cell">
                                         <div class="reference-title">@t.ReferenceNo</div>
                                         <div class="reference-subtitle">
@@ -156,7 +156,7 @@
                                     </div>
                                 </td>
 
-                                <td>
+                                <td class="route-col">
                                     <div class="route-cell">
                                         <div class="route-main">@t.Origin → @t.Destination</div>
                                     </div>
@@ -173,7 +173,7 @@
                                     }
                                 </td>
 
-                                <td>
+                                <td class="modes-col">
                                     <div class="modes-cell">
                                         <div class="modes-main">
                                             @(string.IsNullOrWhiteSpace(t.ModesSummary) ? "Unspecified" : t.ModesSummary)
@@ -227,7 +227,7 @@
                                     </div>
                                 </td>
 
-                                <td>
+                                <td class="actions-col">
                                     <a class="btn btn-primary btn-sm btn-table-action"
                                        asp-page="/TransportDetails"
                                        asp-route-id="@t.Id">
@@ -474,21 +474,41 @@
         margin-bottom: 8px;
     }
 
-    .modern-table thead th {
-        border-bottom: 1px solid #e2e8f0;
-        color: #64748b;
-        font-size: 0.88rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        padding-bottom: 14px;
+    .modern-table {
+        min-width: 1100px;
     }
 
-    .modern-table tbody td {
-        padding-top: 18px;
-        padding-bottom: 18px;
-        border-color: #eef2f7;
-        vertical-align: middle;
+        .modern-table thead th {
+            border-bottom: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 0.88rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding-bottom: 14px;
+        }
+
+        .modern-table tbody td {
+            padding-top: 18px;
+            padding-bottom: 18px;
+            border-color: #eef2f7;
+            vertical-align: middle;
+        }
+
+    .reference-col {
+        min-width: 170px;
+    }
+
+    .route-col {
+        min-width: 220px;
+    }
+
+    .modes-col {
+        min-width: 180px;
+    }
+
+    .actions-col {
+        min-width: 120px;
     }
 
     .reference-cell,
@@ -505,7 +525,7 @@
     .modes-main {
         color: #0f172a;
         font-weight: 800;
-        line-height: 1.4;
+        line-height: 1.45;
     }
 
     .reference-subtitle,
@@ -597,6 +617,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        min-width: 90px;
     }
 
     @@media (max-width: 1199.98px) {
