@@ -8,10 +8,12 @@ using LogiDocs.Application.Documents.Queries;
 using LogiDocs.Application.Transports.Commands;
 using LogiDocs.Application.Transports.Queries;
 using LogiDocs.Infrastructure;
+using LogiDocs.Infrastructure.Blockchain;
 using LogiDocs.Infrastructure.Persistence;
 using LogiDocs.Infrastructure.Persistence.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -74,6 +76,39 @@ builder.Services.AddScoped<ILogiDocsDbContext>(sp =>
     sp.GetRequiredService<LogiDocsDbContext>());
 
 builder.Services.AddScoped<IAuditWriter, AuditWriter>();
+
+// ---------------- BLOCKCHAIN OPTIONS ----------------
+
+builder.Services.Configure<BlockchainOptions>(
+    builder.Configuration.GetSection(BlockchainOptions.SectionName));
+
+builder.Services.AddScoped<IBlockchainRegistrar>(sp =>
+{
+    var options = sp.GetRequiredService<IOptions<BlockchainOptions>>().Value;
+
+    if (options.Provider.Equals("Solana", StringComparison.OrdinalIgnoreCase))
+    {
+        return new SolanaBlockchainRegistrar(
+            sp.GetRequiredService<IOptions<BlockchainOptions>>(),
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<SolanaBlockchainRegistrar>>());
+    }
+
+    return new FakeBlockchainRegistrar();
+});
+
+builder.Services.AddScoped<IBlockchainProofReader>(sp =>
+{
+    var options = sp.GetRequiredService<IOptions<BlockchainOptions>>().Value;
+
+    if (options.Provider.Equals("Solana", StringComparison.OrdinalIgnoreCase))
+    {
+        return new SolanaBlockchainProofReader(
+            sp.GetRequiredService<IOptions<BlockchainOptions>>(),
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<SolanaBlockchainProofReader>>());
+    }
+
+    return new FakeBlockchainProofReader();
+});
 
 // ---------------- USE CASES ----------------
 

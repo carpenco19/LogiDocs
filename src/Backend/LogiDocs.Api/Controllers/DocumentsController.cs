@@ -159,12 +159,19 @@ public sealed class DocumentsController : ControllerBase
 
         var performedByRole = User.FindFirstValue(ClaimTypes.Role);
 
-        await _registerOnChainUseCase.ExecuteAsync(
-            documentId,
-            performedByUserId,
-            performedByName,
-            performedByRole,
-            ct);
+        try
+        {
+            await _registerOnChainUseCase.ExecuteAsync(
+                documentId,
+                performedByUserId,
+                performedByName,
+                performedByRole,
+                ct);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
 
         var doc = await _db.Documents.FirstOrDefaultAsync(x => x.Id == documentId, ct);
         if (doc == null)
@@ -175,6 +182,7 @@ public sealed class DocumentsController : ControllerBase
             documentId = doc.Id,
             chainStatus = doc.ChainStatus?.ToString(),
             blockchainTxId = doc.BlockchainTxId,
+            blockchainProofAddress = doc.BlockchainProofAddress,
             registeredOnChainAtUtc = doc.RegisteredOnChainAtUtc,
             chainError = doc.ChainError
         });

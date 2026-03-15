@@ -13,4 +13,7 @@ public sealed class DocumentVerificationDto
     public bool IsRegisteredOnChain { get; set; }
     public bool IsIntegrityValid { get; set; }
     public string VerificationMessage { get; set; } = string.Empty;
+
+    public int DocumentStatus { get; set; }
+    public string DocumentStatusName { get; set; } = string.Empty;
 }

@@ -31,6 +31,7 @@ public sealed class TransportDetailsModel : PageModel
 
     public List<TransportSegmentRow> Segments { get; set; } = new();
     public List<DocumentRow> Documents { get; set; } = new();
+    
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -381,6 +382,7 @@ public sealed class TransportDetailsModel : PageModel
         public string? OriginalFileName { get; set; }
         public string? Sha256 { get; set; }
         public string? BlockchainTxId { get; set; }
+        public string? BlockchainProofAddress { get; set; }
         public string? ChainStatus { get; set; }
         public DateTime? RegisteredOnChainAtUtc { get; set; }
         public string? ChainError { get; set; }

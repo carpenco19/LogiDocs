@@ -16,10 +16,25 @@
 
     if (Model.VerificationResult != null)
     {
-        if (Model.VerificationResult.IsIntegrityValid)
+        if (Model.VerificationResult.DocumentStatus == 3)
+        {
+            verificationToneClass = "verification-warning";
+            verificationBadgeText = "Rejected document";
+        }
+        else if (Model.VerificationResult.DocumentStatus == 2)
+        {
+            verificationToneClass = "verification-warning";
+            verificationBadgeText = "Tampered document";
+        }
+        else if (Model.VerificationResult.IsIntegrityValid)
         {
             verificationToneClass = "verification-valid";
             verificationBadgeText = "Integrity valid";
+        }
+        else if (Model.VerificationResult.DocumentStatus == 1 && !Model.VerificationResult.IsRegisteredOnChain)
+        {
+            verificationToneClass = "verification-neutral";
+            verificationBadgeText = "Ready for registration";
         }
         else
         {
@@ -27,6 +42,24 @@
             verificationBadgeText = "Check required";
         }
     }
+    bool IsSimulatedTx(string? tx) =>
+    !string.IsNullOrWhiteSpace(tx) &&
+    tx.StartsWith("SIMULATED_TX_", StringComparison.OrdinalIgnoreCase);
+
+    bool IsSimulatedProof(string? proof) =>
+        !string.IsNullOrWhiteSpace(proof) &&
+        proof.StartsWith("SIMULATED_PROOF_", StringComparison.OrdinalIgnoreCase);
+
+    string BuildDevnetTxUrl(string? tx) =>
+        string.IsNullOrWhiteSpace(tx) || IsSimulatedTx(tx)
+    ? string.Empty
+    : $"https://explorer.solana.com/tx/{tx}?cluster=devnet";
+
+    string BuildDevnetAddressUrl(string? address) =>
+        string.IsNullOrWhiteSpace(address) || IsSimulatedProof(address)
+            ? string.Empty
+            : $"https://explorer.solana.com/address/{address}?cluster=devnet";
+
 }
 
 <div class="transport-details-page">
@@ -236,9 +269,49 @@
                 </div>
 
                 <div class="verification-item">
+                    <div class="verification-label">Document Status</div>
+                    <div class="verification-value">
+                        @if (Model.VerificationResult.DocumentStatus == 1)
+                        {
+                            <span class="status-pill status-pill--success">Verified</span>
+                        }
+                        else if (Model.VerificationResult.DocumentStatus == 2)
+                        {
+                            <span class="status-pill status-pill--danger">Tampered</span>
+                        }
+                        else if (Model.VerificationResult.DocumentStatus == 3)
+                        {
+                            <span class="status-pill status-pill--dark">Rejected</span>
+                        }
+                        else
+                        {
+                            <span class="status-pill status-pill--muted">Uploaded</span>
+                        }
+                    </div>
+                </div>
+                <div class="verification-item">
                     <div class="verification-label">Blockchain Status</div>
                     <div class="verification-value">
                         @(string.IsNullOrWhiteSpace(Model.VerificationResult.ChainStatus) ? "-" : Model.VerificationResult.ChainStatus)
+                    </div>
+                </div>
+
+                <div class="verification-item">
+                    <div class="verification-label">Registration Type</div>
+                    <div class="verification-value">
+                        @if (!string.IsNullOrWhiteSpace(Model.VerificationResult.BlockchainTxId) &&
+                       Model.VerificationResult.BlockchainTxId.StartsWith("SIMULATED_TX_", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <span class="status-pill status-pill--warning">Simulated</span>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(Model.VerificationResult.BlockchainTxId))
+                        {
+                            <span class="status-pill status-pill--success">Real blockchain</span>
+                        }
+                        else
+                        {
+                            <span class="status-pill status-pill--muted">Not available</span>
+                        }
                     </div>
                 </div>
 
@@ -263,8 +336,70 @@
 
                 <div class="verification-item verification-item--wide">
                     <div class="verification-label">Blockchain Transaction</div>
-                    <div class="verification-value verification-code">
-                        @(string.IsNullOrWhiteSpace(Model.VerificationResult.BlockchainTxId) ? "-" : Model.VerificationResult.BlockchainTxId)
+                    <div class="verification-value verification-code verification-code-with-actions">
+                        <span>
+                            @(string.IsNullOrWhiteSpace(Model.VerificationResult.BlockchainTxId) ? "-" : Model.VerificationResult.BlockchainTxId)
+                        </span>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.VerificationResult.BlockchainTxId))
+                        {
+                            <div class="inline-action-group">
+                                <button type="button"
+                                        class="btn btn-outline-secondary btn-sm btn-inline-action"
+                                        onclick="copyToClipboard('@Model.VerificationResult.BlockchainTxId')">
+                                    Copy Tx
+                                </button>
+
+                                @if (!IsSimulatedTx(Model.VerificationResult.BlockchainTxId))
+                                {
+                                    <a class="btn btn-outline-primary btn-sm btn-inline-action"
+                                       href="@BuildDevnetTxUrl(Model.VerificationResult.BlockchainTxId)"
+                                       target="_blank"
+                                       rel="noopener noreferrer">
+                                        Explorer
+                                    </a>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="verification-item verification-item--wide">
+                    <div class="verification-label">Blockchain Proof Address</div>
+                    <div class="verification-value verification-code verification-code-with-actions">
+                        @{
+                            string? verificationProofAddress = null;
+
+                            if (Model.Documents != null && Model.Documents.Any(x => x.Id == Model.VerificationResult.DocumentId))
+                            {
+                                verificationProofAddress = Model.Documents.First(x => x.Id == Model.VerificationResult.DocumentId).BlockchainProofAddress;
+                            }
+                        }
+
+                        <span>
+                            @(string.IsNullOrWhiteSpace(verificationProofAddress) ? "-" : verificationProofAddress)
+                        </span>
+
+                        @if (!string.IsNullOrWhiteSpace(verificationProofAddress))
+                        {
+                            <div class="inline-action-group">
+                                <button type="button"
+                                        class="btn btn-outline-secondary btn-sm btn-inline-action"
+                                        onclick="copyToClipboard('@verificationProofAddress')">
+                                    Copy Proof
+                                </button>
+
+                                @if (!IsSimulatedProof(verificationProofAddress))
+                                {
+                                    <a class="btn btn-outline-primary btn-sm btn-inline-action"
+                                       href="@BuildDevnetAddressUrl(verificationProofAddress)"
+                                       target="_blank"
+                                       rel="noopener noreferrer">
+                                        Explorer
+                                    </a>
+                                }
+                            </div>
+                        }
                     </div>
                 </div>
 
@@ -340,7 +475,7 @@
                             <th>Doc Status</th>
                             <th>Hash</th>
                             <th>Blockchain</th>
-                            <th>Tx</th>
+                            <th>Transaction / Proof</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -353,10 +488,19 @@
                             var isPending = string.Equals(chainStatus, "Pending", StringComparison.OrdinalIgnoreCase);
                             var isFailed = string.Equals(chainStatus, "Failed", StringComparison.OrdinalIgnoreCase);
 
+                            var isSimulated = IsSimulatedTx(d.BlockchainTxId) || IsSimulatedProof(d.BlockchainProofAddress);
+                            var isRealBlockchain = isRegistered && !isSimulated && !string.IsNullOrWhiteSpace(d.BlockchainTxId);
+
                             var isUploaded = d.Status == 0;
                             var isVerified = d.Status == 1;
                             var isTampered = d.Status == 2;
                             var isRejected = d.Status == 3;
+
+                            var canRegisterThisDocument =
+                            Model.CanRegister &&
+                            isVerified &&
+                            !isRegistered &&
+                            !isPending;
 
                             <tr>
                                 <td class="file-col">
@@ -413,9 +557,21 @@
                                 </td>
 
                                 <td class="hash-cell">
-                                    <span class="text-truncate d-inline-block">
-                                        @(string.IsNullOrWhiteSpace(d.BlockchainTxId) ? "-" : d.BlockchainTxId)
-                                    </span>
+                                    <div class="blockchain-meta-cell">
+                                        <div>
+                                            <div class="blockchain-meta-label">Tx</div>
+                                            <span class="text-truncate d-inline-block blockchain-meta-value">
+                                                @(string.IsNullOrWhiteSpace(d.BlockchainTxId) ? "-" : d.BlockchainTxId)
+                                            </span>
+                                        </div>
+
+                                        <div>
+                                            <div class="blockchain-meta-label">Proof</div>
+                                            <span class="text-truncate d-inline-block blockchain-meta-value">
+                                                @(string.IsNullOrWhiteSpace(d.BlockchainProofAddress) ? "-" : d.BlockchainProofAddress)
+                                            </span>
+                                        </div>
+                                    </div>
                                 </td>
 
                                 <td class="actions-cell">
@@ -425,7 +581,7 @@
                                             Download
                                         </a>
 
-                                        @if (Model.CanRegister && !isRegistered && !isPending)
+                                        @if (canRegisterThisDocument)
                                         {
                                             <form method="post" asp-page-handler="Register" class="d-inline">
                                                 <input type="hidden" asp-for="RegisterDocumentId" value="@d.Id" />
@@ -1234,5 +1390,101 @@
             .segment-operator strong {
                 text-align: left;
             }
+
+    
+
+        .blockchain-meta-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 220px;
+        }
+
+        .blockchain-meta-label {
+            color: #64748b;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .blockchain-meta-value {
+            max-width: 220px;
+            font-size: 0.86rem;
+            font-family: Consolas, monospace;
+            word-break: break-all;
+        }
+
+        .verification-code-with-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .inline-action-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .btn-inline-action {
+            border-radius: 999px;
+            font-weight: 700;
+            min-height: 28px;
+            padding: 0 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            line-height: 1;
+        }
+
+        .blockchain-meta-value-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .blockchain-meta-value {
+            max-width: 220px;
+            font-size: 0.84rem;
+            font-family: Consolas, monospace;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        .blockchain-meta-cell > div {
+            padding: 8px 0;
+        }
+
+            .blockchain-meta-cell > div + div {
+                border-top: 1px dashed #e2e8f0;
+            }
+
+        .blockchain-status-stack .status-pill {
+            width: fit-content;
+        }
+
+        
+
+       
     }
 </style>
+<script>
+    async function copyToClipboard(text) {
+        if (!text || text === "-") return;
+
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch {
+            const temp = document.createElement("textarea");
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand("copy");
+            document.body.removeChild(temp);
+        }
+    }
+</script>

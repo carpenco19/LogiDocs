@@ -2,6 +2,9 @@
 
 public interface IBlockchainRegistrar
 {
-    /// Returnează semnătura/TxId (signature) de pe Solana.
-    Task<string> RegisterDocumentHashAsync(string sha256, Guid documentId, CancellationToken ct);
+    Task<BlockchainRegistrationResult> RegisterDocumentHashAsync(
+        string sha256,
+        Guid documentId,
+        Guid transportId,
+        CancellationToken ct);
 }

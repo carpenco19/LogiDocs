@@ -4,9 +4,16 @@ namespace LogiDocs.Infrastructure.Blockchain;
 
 public sealed class FakeBlockchainRegistrar : IBlockchainRegistrar
 {
-    public Task<string> RegisterDocumentHashAsync(string sha256, Guid documentId, CancellationToken ct)
+    public Task<BlockchainRegistrationResult> RegisterDocumentHashAsync(
+        string sha256,
+        Guid documentId,
+        Guid transportId,
+        CancellationToken ct)
     {
-        // Simulăm un TxId ca înainte
-        return Task.FromResult("SIMULATED_TX_" + Guid.NewGuid().ToString("N"));
+        return Task.FromResult(new BlockchainRegistrationResult
+        {
+            TransactionId = "SIMULATED_TX_" + Guid.NewGuid().ToString("N"),
+            ProofAddress = "SIMULATED_PROOF_" + documentId.ToString("N")
+        });
     }
 }

@@ -30,6 +30,10 @@ public sealed class RegisterDocumentOnChainUseCase
         if (doc == null)
             throw new InvalidOperationException("Document not found.");
 
+        if (doc.Status != DocumentStatus.Verified)
+            throw new InvalidOperationException(
+                $"Only verified documents can be registered on blockchain. Current status: {doc.Status}.");
+
         if (!string.IsNullOrWhiteSpace(doc.BlockchainTxId))
             return;
 
@@ -40,9 +44,14 @@ public sealed class RegisterDocumentOnChainUseCase
 
         try
         {
-            var txId = await _blockchain.RegisterDocumentHashAsync(doc.Sha256, doc.Id, ct);
+            var result = await _blockchain.RegisterDocumentHashAsync(
+                doc.Sha256,
+                doc.Id,
+                doc.TransportId,
+                ct);
 
-            doc.BlockchainTxId = txId;
+            doc.BlockchainTxId = result.TransactionId;
+            doc.BlockchainProofAddress = result.ProofAddress;
             doc.ChainStatus = BlockchainRegistrationStatus.Registered;
             doc.RegisteredOnChainAtUtc = DateTime.UtcNow;
             doc.ChainError = null;
@@ -53,7 +62,7 @@ public sealed class RegisterDocumentOnChainUseCase
                 entityType: "Document",
                 entityId: doc.Id,
                 action: "DocumentRegisteredOnChain",
-                details: $"Document {doc.OriginalFileName} registered on chain. TxId: {doc.BlockchainTxId}.",
+                details: $"Document {doc.OriginalFileName} registered on chain. TxId: {doc.BlockchainTxId}. ProofAddress: {doc.BlockchainProofAddress}.",
                 performedByUserId: performedByUserId,
                 performedByName: performedByName,
                 performedByRole: performedByRole,
