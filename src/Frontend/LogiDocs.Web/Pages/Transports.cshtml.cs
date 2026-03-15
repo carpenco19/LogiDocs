@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
 
@@ -15,22 +16,72 @@ public sealed class TransportsModel : PageModel
     }
 
     public string? Error { get; set; }
+    public string? Success { get; set; }
+
     public List<TransportRow> Items { get; set; } = new();
 
     public async Task OnGetAsync()
     {
+        await LoadItemsAsync();
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(Guid id)
+    {
         try
         {
+            if (!User.IsInRole("Administrator"))
+            {
+                return Forbid();
+            }
+
             var client = _factory.CreateClient("LogiDocsApi");
 
-            var result = await client.GetFromJsonAsync<List<TransportRow>>("api/transports");
+            var response = await client.DeleteAsync($"api/transports/{id}");
 
-            if (result != null)
-                Items = result;
+            if (response.IsSuccessStatusCode)
+            {
+                Success = "Transport deleted successfully.";
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                Error = "Transport was not found.";
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                Error = "You are not allowed to delete this transport.";
+            }
+            else
+            {
+                var serverMessage = await response.Content.ReadAsStringAsync();
+                Error = string.IsNullOrWhiteSpace(serverMessage)
+                    ? "Failed to delete transport."
+                    : serverMessage;
+            }
         }
         catch (Exception ex)
         {
             Error = ex.Message;
+        }
+
+        await LoadItemsAsync();
+        return Page();
+    }
+
+    private async Task LoadItemsAsync()
+    {
+        try
+        {
+            Error = null;
+
+            var client = _factory.CreateClient("LogiDocsApi");
+            var result = await client.GetFromJsonAsync<List<TransportRow>>("api/transports");
+
+            Items = result ?? new List<TransportRow>();
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+            Items = new List<TransportRow>();
         }
     }
 

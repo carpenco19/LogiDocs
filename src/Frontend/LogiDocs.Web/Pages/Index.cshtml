@@ -67,6 +67,17 @@
                         </a>
                     }
 
+                    @if (User.IsInRole(Roles.Administrator))
+                    {
+                        <a asp-page="/AuditHistory" class="btn btn-outline-dark">
+                            Open Audit History
+                        </a>
+
+                        <a asp-page="/Privacy" class="btn btn-outline-secondary">
+                            Open Admin Overview
+                        </a>
+                    }
+
                     <a asp-page="/Index" class="btn btn-outline-light btn-lg dashboard-action-btn">
                         Refresh Dashboard
                     </a>

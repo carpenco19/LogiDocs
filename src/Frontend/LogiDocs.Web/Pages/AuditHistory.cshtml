@@ -1,0 +1,678 @@
+﻿@page
+@model LogiDocs.Web.Pages.AuditHistoryModel
+
+@{
+    ViewData["Title"] = "Audit History";
+}
+
+<div class="audit-page">
+    <section class="audit-hero">
+        <div class="audit-hero__overlay"></div>
+
+        <div class="audit-hero__content">
+            <div class="audit-hero__left">
+                <div class="audit-badge">Administrator View</div>
+
+                <h1>Audit History</h1>
+
+                <p class="audit-subtitle">
+                    Review system activity across transports and documents, including creation, validation, rejection, verification, and blockchain registration events.
+                </p>
+
+                <div class="audit-actions">
+                    <a asp-page="/Index" class="btn btn-outline-light btn-lg audit-action-btn">
+                        Back to Dashboard
+                    </a>
+                    <a asp-page="/Transports" class="btn btn-light btn-lg audit-action-btn">
+                        Open Transports
+                    </a>
+                </div>
+            </div>
+
+            <div class="audit-hero__right">
+                <div class="hero-summary-card">
+                    <div class="hero-summary-label">Audit Overview</div>
+                    <div class="hero-summary-value">@Model.TotalEntries</div>
+                    <div class="hero-summary-text">tracked activity entries</div>
+
+                    <div class="hero-mini-stats">
+                        <div class="hero-mini-stat">
+                            <span>Transport</span>
+                            <strong>@Model.TransportEvents</strong>
+                        </div>
+                        <div class="hero-mini-stat">
+                            <span>Document</span>
+                            <strong>@Model.DocumentEvents</strong>
+                        </div>
+                        <div class="hero-mini-stat">
+                            <span>Today</span>
+                            <strong>@Model.TodayEvents</strong>
+                        </div>
+                        <div class="hero-mini-stat">
+                            <span>Visible</span>
+                            <strong>@Model.FilteredItems.Count</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="audit-stats-strip">
+        <div class="strip-stat-card">
+            <div class="strip-stat-label">Total Events</div>
+            <div class="strip-stat-value">@Model.TotalEntries</div>
+        </div>
+
+        <div class="strip-stat-card">
+            <div class="strip-stat-label">Transport Events</div>
+            <div class="strip-stat-value text-primary">@Model.TransportEvents</div>
+        </div>
+
+        <div class="strip-stat-card">
+            <div class="strip-stat-label">Document Events</div>
+            <div class="strip-stat-value text-success">@Model.DocumentEvents</div>
+        </div>
+
+        <div class="strip-stat-card">
+            <div class="strip-stat-label">Today</div>
+            <div class="strip-stat-value text-dark">@Model.TodayEvents</div>
+        </div>
+    </section>
+
+    <section class="audit-filter-card">
+        <form method="get" class="audit-filter-form">
+            <div class="filter-group">
+                <label class="filter-label" for="entityFilter">Entity</label>
+                <select id="entityFilter" name="EntityFilter" class="form-select filter-select">
+                    <option value="All" selected="@(string.IsNullOrWhiteSpace(Model.EntityFilter) || Model.EntityFilter == "All")">All</option>
+                    <option value="Transport" selected="@(Model.EntityFilter == "Transport")">Transport</option>
+                    <option value="Document" selected="@(Model.EntityFilter == "Document")">Document</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label" for="timeFilter">Time</label>
+                <select id="timeFilter" name="TimeFilter" class="form-select filter-select">
+                    <option value="All" selected="@(string.IsNullOrWhiteSpace(Model.TimeFilter) || Model.TimeFilter == "All")">All time</option>
+                    <option value="Today" selected="@(Model.TimeFilter == "Today")">Today</option>
+                    <option value="Last7Days" selected="@(Model.TimeFilter == "Last7Days")">Last 7 days</option>
+                </select>
+            </div>
+
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary filter-btn">Apply Filters</button>
+                <a asp-page="/AuditHistory" class="btn btn-outline-secondary filter-btn">Reset</a>
+            </div>
+        </form>
+    </section>
+
+    @if (Model.Error != null)
+    {
+        <div class="modern-alert modern-alert-danger">
+            <strong>Load failed.</strong>
+            <span>@Model.Error</span>
+        </div>
+    }
+    else if (Model.FilteredItems == null || Model.FilteredItems.Count == 0)
+    {
+        <section class="audit-card">
+            <div class="empty-state">
+                <div class="empty-state-icon">🕘</div>
+                <h6>No audit entries available</h6>
+                <p class="text-muted mb-0">System activity will appear here after users perform tracked actions.</p>
+            </div>
+        </section>
+    }
+    else
+    {
+        <section class="audit-card">
+            <div class="audit-card-header">
+                <div>
+                    <h5 class="mb-1">System Activity</h5>
+                    <p class="text-muted mb-0">Latest recorded actions across transports and documents</p>
+                </div>
+                <div class="table-counter">@Model.FilteredItems.Count visible</div>
+            </div>
+
+            <div class="table-responsive mt-4">
+                <table class="table modern-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Actor</th>
+                            <th>Role</th>
+                            <th>Entity</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.FilteredItems)
+                        {
+                            <tr>
+                                <td class="time-col">
+                                    <div class="time-cell">
+                                        <div class="time-main">@item.CreatedAtUtc.ToLocalTime().ToString("dd.MM.yyyy")</div>
+                                        <div class="time-subtitle">@item.CreatedAtUtc.ToLocalTime().ToString("HH:mm:ss")</div>
+                                    </div>
+                                </td>
+
+                                <td class="actor-col">
+                                    <div class="actor-cell">
+                                        <div class="actor-main">@(string.IsNullOrWhiteSpace(item.PerformedByName) ? "Unknown" : item.PerformedByName)</div>
+                                        <div class="actor-subtitle">@item.PerformedByUserId</div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="role-pill">@(string.IsNullOrWhiteSpace(item.PerformedByRole) ? "Unknown" : item.PerformedByRole)</span>
+                                </td>
+
+                                <td>
+                                    @if (item.EntityType == "Transport")
+                                    {
+                                        <span class="entity-pill entity-pill--transport">Transport</span>
+                                    }
+                                    else if (item.EntityType == "Document")
+                                    {
+                                        <span class="entity-pill entity-pill--document">Document</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="entity-pill entity-pill--other">@item.EntityType</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="@Model.GetActionCssClass(item.Action)">
+                                        @Model.GetActionLabel(item.Action)
+                                    </span>
+                                </td>
+
+                                <td class="details-col">
+                                    <div class="details-cell" title="@item.Details">
+                                        @Model.ShortenDetails(item.Details)
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+</div>
+
+<style>
+    .audit-page {
+        padding: 8px 0 24px;
+        background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.10), transparent 24%), radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.08), transparent 20%);
+    }
+
+    .audit-hero {
+        position: relative;
+        overflow: hidden;
+        border-radius: 32px;
+        margin-bottom: 22px;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 45%, #2563eb 100%);
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.20);
+    }
+
+    .audit-hero__overlay {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.14), transparent 20%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.08), transparent 18%);
+        pointer-events: none;
+    }
+
+    .audit-hero__content {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 24px;
+        padding: 34px;
+        color: #fff;
+    }
+
+    .audit-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 18px;
+        backdrop-filter: blur(8px);
+    }
+
+    .audit-hero h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 14px;
+    }
+
+    .audit-subtitle {
+        max-width: 720px;
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 1.04rem;
+        line-height: 1.8;
+        margin-bottom: 22px;
+    }
+
+    .audit-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .audit-action-btn {
+        min-height: 52px;
+        border-radius: 16px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hero-summary-card {
+        height: 100%;
+        padding: 24px;
+        border-radius: 26px;
+        background: rgba(255, 255, 255, 0.10);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(10px);
+    }
+
+    .hero-summary-label {
+        color: rgba(255,255,255,0.75);
+        font-size: 0.92rem;
+        margin-bottom: 8px;
+    }
+
+    .hero-summary-value {
+        font-size: 3rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .hero-summary-text {
+        color: rgba(255,255,255,0.78);
+        line-height: 1.7;
+        margin-bottom: 4px;
+    }
+
+    .hero-mini-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .hero-mini-stat {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.10);
+        border: 1px solid rgba(255,255,255,0.12);
+    }
+
+        .hero-mini-stat span {
+            display: block;
+            color: rgba(255,255,255,0.72);
+            font-size: 0.86rem;
+            margin-bottom: 4px;
+        }
+
+        .hero-mini-stat strong {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+    .audit-stats-strip {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 18px;
+    }
+
+    .strip-stat-card {
+        border-radius: 22px;
+        padding: 18px 20px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(226, 232, 240, 0.92);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+        backdrop-filter: blur(12px);
+    }
+
+    .strip-stat-label {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+    }
+
+    .strip-stat-value {
+        font-size: 1.95rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1;
+    }
+
+    .audit-filter-card {
+        border-radius: 24px;
+        padding: 20px 22px;
+        margin-bottom: 18px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(226, 232, 240, 0.92);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+        backdrop-filter: blur(12px);
+    }
+
+    .audit-filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: end;
+    }
+
+    .filter-group {
+        min-width: 220px;
+        flex: 1 1 220px;
+    }
+
+    .filter-label {
+        display: block;
+        margin-bottom: 8px;
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.92rem;
+    }
+
+    .filter-select {
+        min-height: 48px;
+        border-radius: 14px;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        min-height: 48px;
+        border-radius: 14px;
+        font-weight: 700;
+        min-width: 140px;
+    }
+
+    .modern-alert {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        border-radius: 18px;
+        padding: 14px 18px;
+        margin-bottom: 18px;
+        border: 1px solid transparent;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    }
+
+        .modern-alert strong {
+            font-weight: 800;
+        }
+
+    .modern-alert-danger {
+        background: #fff1f2;
+        border-color: #fecdd3;
+        color: #be123c;
+    }
+
+    .audit-card {
+        border-radius: 28px;
+        padding: 26px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(226, 232, 240, 0.92);
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+        backdrop-filter: blur(12px);
+    }
+
+    .audit-card-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+        .audit-card-header h5 {
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+    .table-counter {
+        display: inline-flex;
+        align-items: center;
+        min-height: 38px;
+        padding: 0 14px;
+        border-radius: 999px;
+        background: #e0ecff;
+        color: #1d4ed8;
+        font-weight: 800;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 36px 18px 10px;
+    }
+
+    .empty-state-icon {
+        font-size: 2.2rem;
+        margin-bottom: 12px;
+    }
+
+    .empty-state h6 {
+        font-size: 1.08rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 8px;
+    }
+
+    .modern-table {
+        min-width: 1200px;
+    }
+
+        .modern-table thead th {
+            border-bottom: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 0.88rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding-bottom: 14px;
+        }
+
+        .modern-table tbody td {
+            padding-top: 18px;
+            padding-bottom: 18px;
+            border-color: #eef2f7;
+            vertical-align: middle;
+        }
+
+    .time-col {
+        min-width: 130px;
+    }
+
+    .actor-col {
+        min-width: 220px;
+    }
+
+    .details-col {
+        min-width: 380px;
+    }
+
+    .time-cell,
+    .actor-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .time-main,
+    .actor-main {
+        color: #0f172a;
+        font-weight: 800;
+        line-height: 1.45;
+    }
+
+    .time-subtitle,
+    .actor-subtitle {
+        color: #94a3b8;
+        font-size: 0.84rem;
+        word-break: break-all;
+    }
+
+    .role-pill,
+    .entity-pill,
+    .action-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 0 12px;
+        border-radius: 999px;
+        font-size: 0.84rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .role-pill {
+        background: #eef2ff;
+        color: #4338ca;
+        border: 1px solid #c7d2fe;
+    }
+
+    .entity-pill--transport {
+        background: #e0ecff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
+    .entity-pill--document {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+    }
+
+    .entity-pill--other {
+        background: #e2e8f0;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+    }
+
+    .action-pill {
+        background: #f8fafc;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+    }
+
+    .action-pill--success {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+    }
+
+    .action-pill--danger {
+        background: #fee2e2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+    }
+
+    .action-pill--info {
+        background: #dbeafe;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
+    .details-cell {
+        color: #334155;
+        line-height: 1.65;
+        cursor: help;
+    }
+
+    @@media (max-width: 1199.98px) {
+        .audit-stats-strip {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 991.98px) {
+        .audit-hero__content {
+            grid-template-columns: 1fr;
+            padding: 26px;
+        }
+
+        .audit-card-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .audit-filter-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .filter-group {
+            min-width: 100%;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .audit-hero h1 {
+            font-size: 2rem;
+        }
+
+        .hero-summary-value {
+            font-size: 2.4rem;
+        }
+
+        .hero-mini-stats {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .audit-stats-strip {
+            grid-template-columns: 1fr;
+        }
+
+        .audit-card,
+        .strip-stat-card,
+        .audit-filter-card {
+            padding: 20px;
+            border-radius: 22px;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .audit-hero__content {
+            padding: 20px;
+        }
+
+        .audit-actions {
+            flex-direction: column;
+        }
+
+        .audit-action-btn,
+        .filter-btn {
+            width: 100%;
+        }
+
+        .filter-actions {
+            width: 100%;
+            flex-direction: column;
+        }
+    }
+</style>

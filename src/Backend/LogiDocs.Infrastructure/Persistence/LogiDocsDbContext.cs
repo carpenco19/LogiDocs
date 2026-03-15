@@ -6,14 +6,22 @@ namespace LogiDocs.Infrastructure.Persistence;
 
 public sealed class LogiDocsDbContext : DbContext, ILogiDocsDbContext
 {
-    public LogiDocsDbContext(DbContextOptions<LogiDocsDbContext> options) : base(options) { }
+    public LogiDocsDbContext(DbContextOptions<LogiDocsDbContext> options) : base(options)
+    {
+    }
 
     public IQueryable<Transport> Transports => Set<Transport>();
     public IQueryable<Document> Documents => Set<Document>();
+    public IQueryable<AuditEntry> AuditEntries => Set<AuditEntry>();
 
-    public new void Add<T>(T entity) where T : class
+    public void Add<T>(T entity) where T : class
     {
         Set<T>().Add(entity);
+    }
+
+    public void Delete<T>(T entity) where T : class
+    {
+        Set<T>().Remove(entity);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -34,14 +42,14 @@ public sealed class LogiDocsDbContext : DbContext, ILogiDocsDbContext
             e.Property(x => x.CreatedByUserId).IsRequired();
 
             e.HasMany(x => x.Documents)
-             .WithOne(d => d.Transport!)
-             .HasForeignKey(d => d.TransportId)
-             .OnDelete(DeleteBehavior.Cascade);
+                .WithOne(d => d.Transport!)
+                .HasForeignKey(d => d.TransportId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             e.HasMany(x => x.Segments)
-             .WithOne(s => s.Transport!)
-             .HasForeignKey(s => s.TransportId)
-             .OnDelete(DeleteBehavior.Cascade);
+                .WithOne(s => s.Transport!)
+                .HasForeignKey(s => s.TransportId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<TransportSegment>(e =>
@@ -87,6 +95,39 @@ public sealed class LogiDocsDbContext : DbContext, ILogiDocsDbContext
             e.Property(x => x.UploadedByUserId).IsRequired();
 
             e.HasIndex(x => new { x.TransportId, x.Type });
+        });
+        modelBuilder.Entity<AuditEntry>(e =>
+        {
+            e.ToTable("AuditEntries");
+            e.HasKey(x => x.Id);
+
+            e.Property(x => x.EntityType)
+                .HasMaxLength(64)
+                .IsRequired();
+
+            e.Property(x => x.EntityId)
+                .IsRequired();
+
+            e.Property(x => x.Action)
+                .HasMaxLength(128)
+                .IsRequired();
+
+            e.Property(x => x.Details)
+                .HasMaxLength(2000);
+
+            e.Property(x => x.PerformedByUserId);
+
+            e.Property(x => x.PerformedByName)
+                .HasMaxLength(256);
+
+            e.Property(x => x.PerformedByRole)
+                .HasMaxLength(128);
+
+            e.Property(x => x.CreatedAtUtc)
+                .IsRequired();
+
+            e.HasIndex(x => x.CreatedAtUtc);
+            e.HasIndex(x => new { x.EntityType, x.EntityId });
         });
     }
 }

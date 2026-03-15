@@ -33,14 +33,16 @@ public sealed class DocumentsController : ControllerBase
     private readonly RegisterDocumentOnChainUseCase _registerOnChainUseCase;
     private readonly VerifyDocumentUseCase _verifyDocumentUseCase;
     private readonly ILogiDocsDbContext _db;
+    private readonly IAuditWriter _audit;
 
     public DocumentsController(
-        UploadDocumentUseCase uploadUseCase,
-        GetDocumentsByTransportUseCase getByTransport,
-        DownloadDocumentUseCase downloadUseCase,
-        RegisterDocumentOnChainUseCase registerOnChainUseCase,
-        VerifyDocumentUseCase verifyDocumentUseCase,
-        ILogiDocsDbContext db)
+     UploadDocumentUseCase uploadUseCase,
+     GetDocumentsByTransportUseCase getByTransport,
+     DownloadDocumentUseCase downloadUseCase,
+     RegisterDocumentOnChainUseCase registerOnChainUseCase,
+     VerifyDocumentUseCase verifyDocumentUseCase,
+     ILogiDocsDbContext db,
+     IAuditWriter audit)
     {
         _uploadUseCase = uploadUseCase;
         _getByTransport = getByTransport;
@@ -48,6 +50,7 @@ public sealed class DocumentsController : ControllerBase
         _registerOnChainUseCase = registerOnChainUseCase;
         _verifyDocumentUseCase = verifyDocumentUseCase;
         _db = db;
+        _audit = audit;
     }
 
     [HttpGet("by-transport/{transportId:guid}")]
@@ -72,7 +75,25 @@ public sealed class DocumentsController : ControllerBase
     {
         try
         {
-            var result = await _verifyDocumentUseCase.ExecuteAsync(documentId, ct);
+            var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Guid? performedByUserId = Guid.TryParse(userIdText, out var parsedUserId)
+                ? parsedUserId
+                : null;
+
+            var performedByName =
+                User.FindFirstValue(ClaimTypes.Email) ??
+                User.Identity?.Name ??
+                User.FindFirstValue(ClaimTypes.Name);
+
+            var performedByRole = User.FindFirstValue(ClaimTypes.Role);
+
+            var result = await _verifyDocumentUseCase.ExecuteAsync(
+                documentId,
+                performedByUserId,
+                performedByName,
+                performedByRole,
+                ct);
+
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -96,12 +117,21 @@ public sealed class DocumentsController : ControllerBase
         if (!Guid.TryParse(userIdText, out var uploadedByUserId))
             return Forbid();
 
+        var performedByName =
+            User.FindFirstValue(ClaimTypes.Email) ??
+            User.Identity?.Name ??
+            User.FindFirstValue(ClaimTypes.Name);
+
+        var performedByRole = User.FindFirstValue(ClaimTypes.Role);
+
         await using var stream = form.File.OpenReadStream();
 
         var documentId = await _uploadUseCase.ExecuteAsync(
             form.TransportId,
             form.Type,
             uploadedByUserId,
+            performedByName,
+            performedByRole,
             stream,
             form.File.FileName,
             ct);
@@ -117,7 +147,24 @@ public sealed class DocumentsController : ControllerBase
         if (existingDoc == null)
             return NotFound("Document not found.");
 
-        await _registerOnChainUseCase.ExecuteAsync(documentId, ct);
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid? performedByUserId = Guid.TryParse(userIdText, out var parsedUserId)
+            ? parsedUserId
+            : null;
+
+        var performedByName =
+            User.FindFirstValue(ClaimTypes.Email) ??
+            User.Identity?.Name ??
+            User.FindFirstValue(ClaimTypes.Name);
+
+        var performedByRole = User.FindFirstValue(ClaimTypes.Role);
+
+        await _registerOnChainUseCase.ExecuteAsync(
+            documentId,
+            performedByUserId,
+            performedByName,
+            performedByRole,
+            ct);
 
         var doc = await _db.Documents.FirstOrDefaultAsync(x => x.Id == documentId, ct);
         if (doc == null)
@@ -132,7 +179,6 @@ public sealed class DocumentsController : ControllerBase
             chainError = doc.ChainError
         });
     }
-
     [HttpPost("{documentId:guid}/validate")]
     [Authorize(Roles = ApiRoles.ValidateDocuments)]
     public async Task<IActionResult> Validate(Guid documentId, CancellationToken ct)
@@ -144,9 +190,31 @@ public sealed class DocumentsController : ControllerBase
         if (doc == null)
             return NotFound();
 
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid? performedByUserId = Guid.TryParse(userIdText, out var parsedUserId)
+            ? parsedUserId
+            : null;
+
+        var performedByName =
+            User.FindFirstValue(ClaimTypes.Email) ??
+            User.Identity?.Name ??
+            User.FindFirstValue(ClaimTypes.Name);
+
+        var performedByRole = User.FindFirstValue(ClaimTypes.Role);
+
         doc.Status = DocumentStatus.Verified;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.WriteAsync(
+            entityType: "Document",
+            entityId: doc.Id,
+            action: "DocumentValidated",
+            details: $"Document {doc.OriginalFileName} validated for transport {doc.Transport?.ReferenceNo}.",
+            performedByUserId: performedByUserId,
+            performedByName: performedByName,
+            performedByRole: performedByRole,
+            ct: ct);
 
         var allDocs = await _db.Documents
             .Where(x => x.TransportId == doc.TransportId)
@@ -163,6 +231,16 @@ public sealed class DocumentsController : ControllerBase
             {
                 transport.Status = TransportStatus.Completed;
                 await _db.SaveChangesAsync(ct);
+
+                await _audit.WriteAsync(
+                    entityType: "Transport",
+                    entityId: transport.Id,
+                    action: "TransportCompleted",
+                    details: $"Transport {transport.ReferenceNo} marked as completed after all documents were validated.",
+                    performedByUserId: performedByUserId,
+                    performedByName: performedByName,
+                    performedByRole: performedByRole,
+                    ct: ct);
             }
         }
 
@@ -182,9 +260,31 @@ public sealed class DocumentsController : ControllerBase
         if (doc == null)
             return NotFound("Document not found.");
 
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid? performedByUserId = Guid.TryParse(userIdText, out var parsedUserId)
+            ? parsedUserId
+            : null;
+
+        var performedByName =
+            User.FindFirstValue(ClaimTypes.Email) ??
+            User.Identity?.Name ??
+            User.FindFirstValue(ClaimTypes.Name);
+
+        var performedByRole = User.FindFirstValue(ClaimTypes.Role);
+
         doc.Status = DocumentStatus.Rejected;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.WriteAsync(
+            entityType: "Document",
+            entityId: doc.Id,
+            action: "DocumentRejected",
+            details: $"Document {doc.OriginalFileName} was rejected.",
+            performedByUserId: performedByUserId,
+            performedByName: performedByName,
+            performedByRole: performedByRole,
+            ct: ct);
 
         var transport = await _db.Transports.FirstOrDefaultAsync(x => x.Id == doc.TransportId, ct);
 
@@ -192,6 +292,16 @@ public sealed class DocumentsController : ControllerBase
         {
             transport.Status = TransportStatus.InProcess;
             await _db.SaveChangesAsync(ct);
+
+            await _audit.WriteAsync(
+                entityType: "Transport",
+                entityId: transport.Id,
+                action: "TransportReturnedToInProcess",
+                details: $"Transport {transport.ReferenceNo} returned to InProcess because a document was rejected.",
+                performedByUserId: performedByUserId,
+                performedByName: performedByName,
+                performedByRole: performedByRole,
+                ct: ct);
         }
 
         return Ok(new

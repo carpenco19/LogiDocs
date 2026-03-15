@@ -104,7 +104,16 @@
             <span>@Model.Error</span>
         </div>
     }
-    else if (Model.Items == null || Model.Items.Count == 0)
+
+    @if (Model.Success != null)
+    {
+        <div class="modern-alert modern-alert-success">
+            <strong>Success.</strong>
+            <span>@Model.Success</span>
+        </div>
+    }
+
+    @if (Model.Items == null || Model.Items.Count == 0)
     {
         <section class="transports-card">
             <div class="empty-state">
@@ -228,11 +237,25 @@
                                 </td>
 
                                 <td class="actions-col">
-                                    <a class="btn btn-primary btn-sm btn-table-action"
-                                       asp-page="/TransportDetails"
-                                       asp-route-id="@t.Id">
-                                        Open
-                                    </a>
+                                    <div class="table-actions-stack">
+                                        <a class="btn btn-primary btn-sm btn-table-action"
+                                           asp-page="/TransportDetails"
+                                           asp-route-id="@t.Id">
+                                            Open
+                                        </a>
+
+                                        @if (User.IsInRole(Roles.Administrator))
+                                        {
+                                            <form method="post"
+                                                  asp-page-handler="Delete"
+                                                  asp-route-id="@t.Id"
+                                                  onsubmit="return confirm('Are you sure you want to delete this transport? This action will remove the transport, its segments, and its documents from the database.');">
+                                                <button type="submit" class="btn btn-danger btn-sm btn-table-action">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -421,6 +444,12 @@
         background: #fff1f2;
         border-color: #fecdd3;
         color: #be123c;
+    }
+
+    .modern-alert-success {
+        background: #ecfdf5;
+        border-color: #bbf7d0;
+        color: #166534;
     }
 
     .transports-card {
@@ -619,6 +648,20 @@
         justify-content: center;
         min-width: 90px;
     }
+
+    .table-actions-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+        .table-actions-stack form {
+            margin: 0;
+        }
+
+        .table-actions-stack .btn-table-action {
+            width: 100%;
+        }
 
     @@media (max-width: 1199.98px) {
         .transports-stats-strip {

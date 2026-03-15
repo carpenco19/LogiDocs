@@ -37,6 +37,12 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
+                        @if (User.IsInRole("Administrator"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/AuditHistory">Audit History</a>
+                            </li>
+                        }
                     </ul>
 
                     <div class="d-flex align-items-center ms-lg-3">

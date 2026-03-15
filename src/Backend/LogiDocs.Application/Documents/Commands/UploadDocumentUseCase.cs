@@ -9,17 +9,24 @@ public sealed class UploadDocumentUseCase
 {
     private readonly ILogiDocsDbContext _db;
     private readonly IDocumentStorage _storage;
+    private readonly IAuditWriter _audit;
 
-    public UploadDocumentUseCase(ILogiDocsDbContext db, IDocumentStorage storage)
+    public UploadDocumentUseCase(
+        ILogiDocsDbContext db,
+        IDocumentStorage storage,
+        IAuditWriter audit)
     {
         _db = db;
         _storage = storage;
+        _audit = audit;
     }
 
     public async Task<Guid> ExecuteAsync(
         Guid transportId,
         int type,
         Guid uploadedByUserId,
+        string? performedByName,
+        string? performedByRole,
         Stream fileStream,
         string originalFileName,
         CancellationToken ct = default)
@@ -63,6 +70,16 @@ public sealed class UploadDocumentUseCase
         }
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.WriteAsync(
+            entityType: "Document",
+            entityId: doc.Id,
+            action: "DocumentUploaded",
+            details: $"Document {doc.OriginalFileName} uploaded for transport {transport.ReferenceNo}. Type: {doc.Type}.",
+            performedByUserId: uploadedByUserId,
+            performedByName: performedByName,
+            performedByRole: performedByRole,
+            ct: ct);
 
         return doc.Id;
     }

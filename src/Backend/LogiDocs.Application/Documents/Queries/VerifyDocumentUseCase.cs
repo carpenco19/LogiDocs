@@ -9,14 +9,24 @@ public sealed class VerifyDocumentUseCase
 {
     private readonly ILogiDocsDbContext _db;
     private readonly IDocumentStorage _storage;
+    private readonly IAuditWriter _audit;
 
-    public VerifyDocumentUseCase(ILogiDocsDbContext db, IDocumentStorage storage)
+    public VerifyDocumentUseCase(
+        ILogiDocsDbContext db,
+        IDocumentStorage storage,
+        IAuditWriter audit)
     {
         _db = db;
         _storage = storage;
+        _audit = audit;
     }
 
-    public async Task<DocumentVerificationDto> ExecuteAsync(Guid documentId, CancellationToken ct = default)
+    public async Task<DocumentVerificationDto> ExecuteAsync(
+        Guid documentId,
+        Guid? performedByUserId,
+        string? performedByName,
+        string? performedByRole,
+        CancellationToken ct = default)
     {
         var doc = _db.Documents.FirstOrDefault(d => d.Id == documentId);
 
@@ -61,6 +71,16 @@ public sealed class VerifyDocumentUseCase
             : hashMatches
                 ? "Integritatea documentului este validă."
                 : "Documentul a fost modificat. Hash-ul recalculat nu corespunde cu cel salvat.";
+
+        await _audit.WriteAsync(
+            entityType: "Document",
+            entityId: doc.Id,
+            action: "DocumentVerified",
+            details: $"Document {doc.OriginalFileName} verified. RegisteredOnChain: {isRegistered}. HashMatches: {hashMatches}. Status: {doc.Status}.",
+            performedByUserId: performedByUserId,
+            performedByName: performedByName,
+            performedByRole: performedByRole,
+            ct: ct);
 
         return new DocumentVerificationDto
         {

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text;
 using LogiDocs.Api.Security;
 using LogiDocs.Application.Abstractions;
+using LogiDocs.Application.Audit.Queries;
 using LogiDocs.Application.Documents.Commands;
 using LogiDocs.Application.Documents.Queries;
 using LogiDocs.Application.Transports.Commands;
@@ -72,10 +73,13 @@ builder.Services.AddDbContext<LogiDocsDbContext>(options =>
 builder.Services.AddScoped<ILogiDocsDbContext>(sp =>
     sp.GetRequiredService<LogiDocsDbContext>());
 
+builder.Services.AddScoped<IAuditWriter, AuditWriter>();
+
 // ---------------- USE CASES ----------------
 
 builder.Services.AddScoped<CreateTransportUseCase>();
 builder.Services.AddScoped<GetTransportsUseCase>();
+builder.Services.AddScoped<DeleteTransportUseCase>();
 
 builder.Services.AddScoped<UploadDocumentUseCase>();
 builder.Services.AddScoped<GetDocumentsByTransportUseCase>();
@@ -83,6 +87,7 @@ builder.Services.AddScoped<GetDocumentsByTransportUseCase>();
 builder.Services.AddScoped<DownloadDocumentUseCase>();
 builder.Services.AddScoped<RegisterDocumentOnChainUseCase>();
 builder.Services.AddScoped<VerifyDocumentUseCase>();
+builder.Services.AddScoped<GetAuditEntriesUseCase>();
 
 // ---------------- INFRASTRUCTURE ----------------
 

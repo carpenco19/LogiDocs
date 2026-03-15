@@ -4,6 +4,7 @@ using LogiDocs.Application.Transports.Queries;
 using LogiDocs.Contracts.Transports;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace LogiDocs.Api.Controllers;
 
@@ -25,18 +26,48 @@ public sealed class TransportsController : ControllerBase
     [HttpPost]
     [Authorize(Roles = ApiRoles.CreateTransport)]
     public async Task<ActionResult<Guid>> Create(
-      [FromBody] CreateTransportRequest req,
-      [FromServices] CreateTransportUseCase uc,
-      CancellationToken ct)
+        [FromBody] CreateTransportRequest req,
+        [FromServices] CreateTransportUseCase uc,
+        CancellationToken ct)
     {
-        var userIdText = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var userIdText = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (!Guid.TryParse(userIdText, out var userId))
             return Forbid();
 
         req.CreatedByUserId = userId;
 
-        var id = await uc.ExecuteAsync(req, ct);
+        var performedByName =
+            User.FindFirstValue(ClaimTypes.Email) ??
+            User.Identity?.Name ??
+            User.FindFirstValue(ClaimTypes.Name);
+
+        var performedByRole = User.FindFirstValue(ClaimTypes.Role);
+
+        var id = await uc.ExecuteAsync(req, performedByName, performedByRole, ct);
         return Ok(id);
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = ApiRoles.Administrator)]
+    public async Task<IActionResult> Delete(
+        Guid id,
+        [FromServices] DeleteTransportUseCase uc,
+        CancellationToken ct)
+    {
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid? performedByUserId = Guid.TryParse(userIdText, out var parsedUserId)
+            ? parsedUserId
+            : null;
+
+        var performedByName =
+            User.FindFirstValue(ClaimTypes.Email) ??
+            User.Identity?.Name ??
+            User.FindFirstValue(ClaimTypes.Name);
+
+        var performedByRole = User.FindFirstValue(ClaimTypes.Role);
+
+        await uc.ExecuteAsync(id, performedByUserId, performedByName, performedByRole, ct);
+        return NoContent();
     }
 }

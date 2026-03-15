@@ -8,13 +8,19 @@ namespace LogiDocs.Application.Transports.Commands;
 public sealed class CreateTransportUseCase
 {
     private readonly ILogiDocsDbContext _db;
+    private readonly IAuditWriter _audit;
 
-    public CreateTransportUseCase(ILogiDocsDbContext db)
+    public CreateTransportUseCase(ILogiDocsDbContext db, IAuditWriter audit)
     {
         _db = db;
+        _audit = audit;
     }
 
-    public async Task<Guid> ExecuteAsync(CreateTransportRequest req, CancellationToken ct = default)
+    public async Task<Guid> ExecuteAsync(
+        CreateTransportRequest req,
+        string? performedByName,
+        string? performedByRole,
+        CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(req.ReferenceNo))
             throw new ArgumentException("ReferenceNo is required.");
@@ -47,6 +53,16 @@ public sealed class CreateTransportUseCase
 
         _db.Add(transport);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.WriteAsync(
+            entityType: "Transport",
+            entityId: transport.Id,
+            action: "TransportCreated",
+            details: $"Transport {transport.ReferenceNo} created. Route: {transport.Origin} -> {transport.Destination}. Segments: {transport.Segments.Count}.",
+            performedByUserId: req.CreatedByUserId,
+            performedByName: performedByName,
+            performedByRole: performedByRole,
+            ct: ct);
 
         return transport.Id;
     }
