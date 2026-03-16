@@ -458,21 +458,28 @@
         </section>
     }
 
-    @if (Model.CanGenerateCustomsDeclaration)
+    @if (Model.ShowGenerateCustomsDeclaration)
     {
-        <section class="details-card mb-4">
-            <div class="details-card-header">
-                <div>
-                    <h5 class="mb-1">Customs Declaration</h5>
-                    <p class="text-muted mb-0">Generate a customs declaration document for the current transport</p>
+        <section class="details-card details-card--declaration mb-4">
+            <div class="declaration-card">
+                <div class="declaration-card__content">
+                    <div class="declaration-card__badge">Broker action</div>
+                    <h5 class="mb-2">Customs Declaration</h5>
+                    <p class="text-muted mb-0">
+                        Generate a customs declaration document automatically for the current transport based on the available data.
+                    </p>
+                </div>
+
+                <div class="declaration-card__actions">
+                    <div class="declaration-card__hint">Creates a new document in Uploaded status</div>
+
+                    <form method="post" asp-page-handler="GenerateCustomsDeclaration">
+                        <button type="submit" class="btn btn-primary btn-action-modern declaration-btn">
+                            Generate Customs Declaration
+                        </button>
+                    </form>
                 </div>
             </div>
-
-            <form method="post" asp-page-handler="GenerateCustomsDeclaration" class="mt-4">
-                <button type="submit" class="btn btn-primary btn-action-modern">
-                    Generate Customs Declaration
-                </button>
-            </form>
         </section>
     }
 
@@ -953,6 +960,74 @@
 
     .details-card--upload {
         background: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(248,251,255,0.92) 100%);
+    }
+
+    .details-card--declaration {
+        background: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(240,247,255,0.94) 100%);
+    }
+
+    .declaration-card {
+        display: grid;
+        grid-template-columns: 1.3fr 0.7fr;
+        gap: 20px;
+        align-items: center;
+    }
+
+    .declaration-card__content h5 {
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .declaration-card__badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: #e0ecff;
+        color: #1d4ed8;
+        font-size: 0.82rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+        width: fit-content;
+    }
+
+    .declaration-card__actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-end;
+    }
+
+    .declaration-card__hint {
+        color: #64748b;
+        font-size: 0.88rem;
+        text-align: right;
+        font-weight: 600;
+    }
+
+    .declaration-btn {
+        min-width: 280px;
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+    }
+
+    @@media (max-width: 991.98px) {
+        .declaration-card {
+            grid-template-columns: 1fr;
+        }
+
+        .declaration-card__actions {
+            align-items: stretch;
+        }
+
+        .declaration-card__hint {
+            text-align: left;
+        }
+
+        .declaration-btn {
+            width: 100%;
+            min-width: auto;
+        }
     }
 
     .details-card-header {

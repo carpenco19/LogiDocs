@@ -27,6 +27,7 @@ public sealed class TransportDetailsModel : PageModel
 
     public int SegmentCount { get; set; }
     public bool IsMultimodal { get; set; }
+    public bool IsTransportCompleted { get; set; }
     public string ModesSummary { get; set; } = string.Empty;
 
     public List<TransportSegmentRow> Segments { get; set; } = new();
@@ -88,6 +89,13 @@ public sealed class TransportDetailsModel : PageModel
     public bool CanValidate =>
         User.IsInRole(Roles.CustomsAuthority) ||
         User.IsInRole(Roles.Administrator);
+
+
+    public bool ShowGenerateCustomsDeclaration =>
+    CanGenerateCustomsDeclaration &&
+    Documents.Count > 0 &&
+    !IsTransportCompleted &&
+    !Documents.Any(x => x.Type == 4);
 
     public async Task OnGetAsync()
     {
@@ -219,6 +227,7 @@ public sealed class TransportDetailsModel : PageModel
 
             VerificationResult = result;
             await LoadTransportDataAsync();
+           
 
             SuccessMessage = "Document verification completed.";
             return Page();
@@ -403,6 +412,7 @@ public sealed class TransportDetailsModel : PageModel
             SegmentCount = transport?.SegmentCount ?? 0;
             IsMultimodal = transport?.IsMultimodal ?? false;
             ModesSummary = transport?.ModesSummary ?? string.Empty;
+            IsTransportCompleted = transport?.Status == 2;
 
             Segments = transport?.Segments ?? new List<TransportSegmentRow>();
 
@@ -442,6 +452,8 @@ public sealed class TransportDetailsModel : PageModel
         public string? ReferenceNo { get; set; }
         public string? Origin { get; set; }
         public string? Destination { get; set; }
+
+        public int Status { get; set; }
 
         public int SegmentCount { get; set; }
         public bool IsMultimodal { get; set; }
