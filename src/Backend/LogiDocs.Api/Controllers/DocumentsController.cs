@@ -15,8 +15,7 @@ public sealed class UploadDocumentForm
     public Guid TransportId { get; set; }
     public int Type { get; set; }
 
-    // Se păstrează doar ca să nu rupem imediat request-urile vechi.
-    // Backend-ul nu îl mai folosește pentru securitate.
+   
     public Guid UploadedByUserId { get; set; }
 
     public IFormFile File { get; set; } = default!;
@@ -36,13 +35,13 @@ public sealed class DocumentsController : ControllerBase
     private readonly IAuditWriter _audit;
 
     public DocumentsController(
-     UploadDocumentUseCase uploadUseCase,
-     GetDocumentsByTransportUseCase getByTransport,
-     DownloadDocumentUseCase downloadUseCase,
-     RegisterDocumentOnChainUseCase registerOnChainUseCase,
-     VerifyDocumentUseCase verifyDocumentUseCase,
-     ILogiDocsDbContext db,
-     IAuditWriter audit)
+        UploadDocumentUseCase uploadUseCase,
+        GetDocumentsByTransportUseCase getByTransport,
+        DownloadDocumentUseCase downloadUseCase,
+        RegisterDocumentOnChainUseCase registerOnChainUseCase,
+        VerifyDocumentUseCase verifyDocumentUseCase,
+        ILogiDocsDbContext db,
+        IAuditWriter audit)
     {
         _uploadUseCase = uploadUseCase;
         _getByTransport = getByTransport;
@@ -136,6 +135,13 @@ public sealed class DocumentsController : ControllerBase
             form.File.FileName,
             ct);
 
+        await RecalculateTransportStatusAsync(
+            form.TransportId,
+            uploadedByUserId,
+            performedByName,
+            performedByRole,
+            ct);
+
         return Ok(new { documentId });
     }
 
@@ -173,6 +179,13 @@ public sealed class DocumentsController : ControllerBase
             return BadRequest(ex.Message);
         }
 
+        await RecalculateTransportStatusAsync(
+            existingDoc.TransportId,
+            performedByUserId,
+            performedByName,
+            performedByRole,
+            ct);
+
         var doc = await _db.Documents.FirstOrDefaultAsync(x => x.Id == documentId, ct);
         if (doc == null)
             return NotFound("Document not found after registration.");
@@ -187,6 +200,7 @@ public sealed class DocumentsController : ControllerBase
             chainError = doc.ChainError
         });
     }
+
     [HttpPost("{documentId:guid}/validate")]
     [Authorize(Roles = ApiRoles.ValidateDocuments)]
     public async Task<IActionResult> Validate(Guid documentId, CancellationToken ct)
@@ -224,33 +238,12 @@ public sealed class DocumentsController : ControllerBase
             performedByRole: performedByRole,
             ct: ct);
 
-        var allDocs = await _db.Documents
-            .Where(x => x.TransportId == doc.TransportId)
-            .ToListAsync(ct);
-
-        var allVerified = allDocs.All(x => x.Status == DocumentStatus.Verified);
-
-        if (allVerified)
-        {
-            var transport = await _db.Transports
-                .FirstOrDefaultAsync(x => x.Id == doc.TransportId, ct);
-
-            if (transport != null)
-            {
-                transport.Status = TransportStatus.Completed;
-                await _db.SaveChangesAsync(ct);
-
-                await _audit.WriteAsync(
-                    entityType: "Transport",
-                    entityId: transport.Id,
-                    action: "TransportCompleted",
-                    details: $"Transport {transport.ReferenceNo} marked as completed after all documents were validated.",
-                    performedByUserId: performedByUserId,
-                    performedByName: performedByName,
-                    performedByRole: performedByRole,
-                    ct: ct);
-            }
-        }
+        await RecalculateTransportStatusAsync(
+            doc.TransportId,
+            performedByUserId,
+            performedByName,
+            performedByRole,
+            ct);
 
         return Ok(new
         {
@@ -294,28 +287,71 @@ public sealed class DocumentsController : ControllerBase
             performedByRole: performedByRole,
             ct: ct);
 
-        var transport = await _db.Transports.FirstOrDefaultAsync(x => x.Id == doc.TransportId, ct);
-
-        if (transport != null && transport.Status == TransportStatus.Completed)
-        {
-            transport.Status = TransportStatus.InProcess;
-            await _db.SaveChangesAsync(ct);
-
-            await _audit.WriteAsync(
-                entityType: "Transport",
-                entityId: transport.Id,
-                action: "TransportReturnedToInProcess",
-                details: $"Transport {transport.ReferenceNo} returned to InProcess because a document was rejected.",
-                performedByUserId: performedByUserId,
-                performedByName: performedByName,
-                performedByRole: performedByRole,
-                ct: ct);
-        }
+        await RecalculateTransportStatusAsync(
+            doc.TransportId,
+            performedByUserId,
+            performedByName,
+            performedByRole,
+            ct);
 
         return Ok(new
         {
             documentId = doc.Id,
             status = doc.Status.ToString()
         });
+    }
+
+    private async Task RecalculateTransportStatusAsync(
+        Guid transportId,
+        Guid? performedByUserId,
+        string? performedByName,
+        string? performedByRole,
+        CancellationToken ct)
+    {
+        var transport = await _db.Transports.FirstOrDefaultAsync(x => x.Id == transportId, ct);
+        if (transport == null)
+            return;
+
+        var allDocs = await _db.Documents
+    .Where(x => x.TransportId == transportId)
+    .ToListAsync(ct);
+
+        var oldStatus = transport.Status;
+
+        if (allDocs.Count == 0)
+        {
+            transport.Status = TransportStatus.Draft;
+        }
+        else
+        {
+            var latestDocsByType = allDocs
+                  .GroupBy(x => x.Type)
+                  .Select(g => g
+                  .OrderByDescending(x => x.UploadedAtUtc)
+                   .First())
+                     .ToList();
+
+            var allLatestVerified = latestDocsByType.All(x => x.Status == DocumentStatus.Verified);
+            var allLatestRegistered = latestDocsByType.All(x => x.ChainStatus == BlockchainRegistrationStatus.Registered);
+
+            transport.Status = allLatestVerified && allLatestRegistered
+                ? TransportStatus.Completed
+                : TransportStatus.InProcess;
+        }
+
+        if (transport.Status != oldStatus)
+        {
+            await _db.SaveChangesAsync(ct);
+
+            await _audit.WriteAsync(
+                entityType: "Transport",
+                entityId: transport.Id,
+                action: "TransportStatusChanged",
+                details: $"Transport {transport.ReferenceNo} status changed from {oldStatus} to {transport.Status}.",
+                performedByUserId: performedByUserId,
+                performedByName: performedByName,
+                performedByRole: performedByRole,
+                ct: ct);
+        }
     }
 }
