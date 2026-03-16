@@ -15,7 +15,7 @@ public static class ApiRoles
         Shipper + "," + Administrator;
 
     public const string UploadDocuments =
-        Shipper + "," + Carrier + "," + CustomsBroker + "," + Administrator;
+    Shipper + "," + Carrier + "," + Administrator;
 
     public const string ReviewDocuments =
         CustomsBroker + "," + CustomsAuthority + "," + Administrator;

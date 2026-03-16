@@ -124,6 +124,8 @@ builder.Services.AddScoped<RegisterDocumentOnChainUseCase>();
 builder.Services.AddScoped<VerifyDocumentUseCase>();
 builder.Services.AddScoped<GetAuditEntriesUseCase>();
 
+builder.Services.AddScoped<GenerateCustomsDeclarationUseCase>();
+
 // ---------------- INFRASTRUCTURE ----------------
 
 builder.Services.AddInfrastructure(builder.Configuration);

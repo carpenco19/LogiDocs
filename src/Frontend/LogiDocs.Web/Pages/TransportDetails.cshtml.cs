@@ -54,11 +54,25 @@ public sealed class TransportDetailsModel : PageModel
     [BindProperty]
     public Guid RejectDocumentId { get; set; }
 
+    [BindProperty]
+    public Guid GenerateCustomsDeclarationTransportId { get; set; }
+
     public DocumentVerificationDto? VerificationResult { get; set; }
 
     public bool CanUpload =>
+    User.IsInRole(Roles.Shipper) ||
+    User.IsInRole(Roles.Carrier) ||
+    User.IsInRole(Roles.Administrator);
+
+    public bool CanUploadCmr =>
+     User.IsInRole(Roles.Carrier) ||
+     User.IsInRole(Roles.Administrator);
+
+    public bool CanUploadCommercialDocuments =>
         User.IsInRole(Roles.Shipper) ||
-        User.IsInRole(Roles.Carrier) ||
+        User.IsInRole(Roles.Administrator);
+
+    public bool CanGenerateCustomsDeclaration =>
         User.IsInRole(Roles.CustomsBroker) ||
         User.IsInRole(Roles.Administrator);
 
@@ -290,6 +304,82 @@ public sealed class TransportDetailsModel : PageModel
             return Page();
         }
     }
+    public async Task<IActionResult> OnGetDownloadAsync(Guid documentId)
+    {
+        if (documentId == Guid.Empty)
+            return BadRequest("Invalid document.");
+
+        try
+        {
+            var client = _factory.CreateClient("LogiDocsApi");
+
+            var response = await client.GetAsync($"api/documents/{documentId}/download");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Error = $"Download failed: {(int)response.StatusCode} {response.ReasonPhrase}";
+                await LoadPageDataAsync();
+                return Page();
+            }
+
+            var contentDisposition = response.Content.Headers.ContentDisposition;
+            var fileName =
+                contentDisposition?.FileNameStar ??
+                contentDisposition?.FileName?.Trim('"') ??
+                $"document_{documentId}";
+
+            var contentType =
+                response.Content.Headers.ContentType?.ToString() ??
+                "application/octet-stream";
+
+            var fileBytes = await response.Content.ReadAsByteArrayAsync();
+
+            return File(fileBytes, contentType, fileName);
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+            await LoadPageDataAsync();
+            return Page();
+        }
+    }
+
+    public async Task<IActionResult> OnPostGenerateCustomsDeclarationAsync()
+    {
+        if (!CanGenerateCustomsDeclaration)
+            return Forbid();
+
+        if (Id == Guid.Empty)
+        {
+            Error = "Invalid transport.";
+            await LoadPageDataAsync();
+            return Page();
+        }
+
+        try
+        {
+            var client = _factory.CreateClient("LogiDocsApi");
+
+            var resp = await client.PostAsync($"api/documents/generate-customs-declaration/{Id}", null);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                Error = $"Customs declaration generation failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
+                await LoadPageDataAsync();
+                return Page();
+            }
+
+            SuccessMessage = "Customs declaration generated successfully.";
+            return RedirectToPage(new { id = Id });
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+            await LoadPageDataAsync();
+            return Page();
+        }
+    }
 
     private async Task LoadPageDataAsync()
     {
@@ -389,10 +479,13 @@ public sealed class TransportDetailsModel : PageModel
 
         public string TypeName => Type switch
         {
-            0 => "CMR",
-            1 => "Invoice",
-            2 => "Packing List",
-            _ => "Other"
+            0 => "Invoice",
+            1 => "Packing List",
+            2 => "CMR",
+            3 => "Certificate",
+            4 => "Customs Declaration",
+            99 => "Other",
+            _ => "Unknown"
         };
 
         public string StatusName => Status switch

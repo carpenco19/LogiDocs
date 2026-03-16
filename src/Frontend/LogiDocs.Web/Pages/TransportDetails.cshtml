@@ -117,6 +117,8 @@
                     {
                         <span class="role-chip role-chip--dark">Validate / Reject</span>
                     }
+
+                 
                 </div>
             </div>
 
@@ -431,9 +433,18 @@
                     <div class="col-lg-4">
                         <label class="form-label-modern">Document Type</label>
                         <select class="form-select form-control-modern" asp-for="Type">
-                            <option value="0">CMR</option>
-                            <option value="1">Invoice</option>
-                            <option value="2">Packing List</option>
+                            @if (Model.CanUploadCommercialDocuments)
+                            {
+                                <option value="0">Invoice</option>
+                                <option value="1">Packing List</option>
+                                <option value="3">Certificate</option>
+                                <option value="99">Other</option>
+                            }
+
+                            @if (Model.CanUploadCmr)
+                            {
+                                <option value="2">CMR</option>
+                            }
                         </select>
                     </div>
 
@@ -443,6 +454,24 @@
                         </button>
                     </div>
                 </div>
+            </form>
+        </section>
+    }
+
+    @if (Model.CanGenerateCustomsDeclaration)
+    {
+        <section class="details-card mb-4">
+            <div class="details-card-header">
+                <div>
+                    <h5 class="mb-1">Customs Declaration</h5>
+                    <p class="text-muted mb-0">Generate a customs declaration document for the current transport</p>
+                </div>
+            </div>
+
+            <form method="post" asp-page-handler="GenerateCustomsDeclaration" class="mt-4">
+                <button type="submit" class="btn btn-primary btn-action-modern">
+                    Generate Customs Declaration
+                </button>
             </form>
         </section>
     }
@@ -577,7 +606,10 @@
                                 <td class="actions-cell">
                                     <div class="action-stack">
                                         <a class="btn btn-primary btn-sm btn-table-action"
-                                           href="http://localhost:5006/api/documents/@d.Id/download">
+                                           asp-page="/TransportDetails"
+                                           asp-route-id="@Model.Id"
+                                           asp-page-handler="Download"
+                                           asp-route-documentId="@d.Id">
                                             Download
                                         </a>
 

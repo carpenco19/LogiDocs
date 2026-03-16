@@ -33,6 +33,7 @@ public sealed class DocumentsController : ControllerBase
     private readonly VerifyDocumentUseCase _verifyDocumentUseCase;
     private readonly ILogiDocsDbContext _db;
     private readonly IAuditWriter _audit;
+    private readonly GenerateCustomsDeclarationUseCase _generateCustomsDeclarationUseCase;
 
     public DocumentsController(
         UploadDocumentUseCase uploadUseCase,
@@ -41,7 +42,8 @@ public sealed class DocumentsController : ControllerBase
         RegisterDocumentOnChainUseCase registerOnChainUseCase,
         VerifyDocumentUseCase verifyDocumentUseCase,
         ILogiDocsDbContext db,
-        IAuditWriter audit)
+        IAuditWriter audit,
+        GenerateCustomsDeclarationUseCase generateCustomsDeclarationUseCase)
     {
         _uploadUseCase = uploadUseCase;
         _getByTransport = getByTransport;
@@ -50,6 +52,7 @@ public sealed class DocumentsController : ControllerBase
         _verifyDocumentUseCase = verifyDocumentUseCase;
         _db = db;
         _audit = audit;
+        _generateCustomsDeclarationUseCase = generateCustomsDeclarationUseCase;
     }
 
     [HttpGet("by-transport/{transportId:guid}")]
@@ -85,6 +88,8 @@ public sealed class DocumentsController : ControllerBase
                 User.FindFirstValue(ClaimTypes.Name);
 
             var performedByRole = User.FindFirstValue(ClaimTypes.Role);
+
+
 
             var result = await _verifyDocumentUseCase.ExecuteAsync(
                 documentId,
@@ -122,6 +127,29 @@ public sealed class DocumentsController : ControllerBase
             User.FindFirstValue(ClaimTypes.Name);
 
         var performedByRole = User.FindFirstValue(ClaimTypes.Role);
+        var isAdministrator = User.IsInRole(ApiRoles.Administrator);
+        var isCarrier = User.IsInRole(ApiRoles.Carrier);
+        var isShipper = User.IsInRole(ApiRoles.Shipper);
+
+        var requestedType = (DocumentType)form.Type;
+
+        if (!isAdministrator)
+        {
+            if (isCarrier && requestedType != DocumentType.CMR)
+                return BadRequest("Carrier can upload only CMR documents.");
+
+            if (isShipper &&
+                requestedType != DocumentType.Invoice &&
+                requestedType != DocumentType.PackingList &&
+                requestedType != DocumentType.Certificate &&
+                requestedType != DocumentType.Other)
+            {
+                return BadRequest("Shipper can upload only commercial documents.");
+            }
+
+            if (!isCarrier && !isShipper)
+                return Forbid();
+        }
 
         await using var stream = form.File.OpenReadStream();
 
@@ -143,6 +171,48 @@ public sealed class DocumentsController : ControllerBase
             ct);
 
         return Ok(new { documentId });
+    }
+
+    [HttpPost("generate-customs-declaration/{transportId:guid}")]
+    [Authorize(Roles = $"{ApiRoles.CustomsBroker},{ApiRoles.Administrator}")]
+    public async Task<IActionResult> GenerateCustomsDeclaration(Guid transportId, CancellationToken ct)
+    {
+        if (transportId == Guid.Empty)
+            return BadRequest("TransportId is required.");
+
+        var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdText, out var generatedByUserId))
+            return Forbid();
+
+        var performedByName =
+            User.FindFirstValue(ClaimTypes.Email) ??
+            User.Identity?.Name ??
+            User.FindFirstValue(ClaimTypes.Name);
+
+        var performedByRole = User.FindFirstValue(ClaimTypes.Role);
+
+        try
+        {
+            var documentId = await _generateCustomsDeclarationUseCase.ExecuteAsync(
+                transportId,
+                generatedByUserId,
+                performedByName,
+                performedByRole,
+                ct);
+
+            await RecalculateTransportStatusAsync(
+                transportId,
+                generatedByUserId,
+                performedByName,
+                performedByRole,
+                ct);
+
+            return Ok(new { documentId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost("{documentId:guid}/register-onchain")]
