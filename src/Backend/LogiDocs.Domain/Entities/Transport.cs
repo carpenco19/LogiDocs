@@ -18,4 +18,5 @@ public sealed class Transport
     public List<Document> Documents { get; set; } = new();
 
     public List<TransportSegment> Segments { get; set; } = new();
+    public CustomsPayment? CustomsPayment { get; set; }
 }

@@ -143,6 +143,10 @@
                             <th>Transport Type</th>
                             <th>Modes</th>
                             <th>Status</th>
+                            @if (Model.ShowCustomsPaymentColumn)
+                            {
+                                <th>Customs Payment</th>
+                            }
                             <th>Docs</th>
                             <th>Progress</th>
                             <th>Actions</th>
@@ -215,7 +219,40 @@
                                         <span class="status-pill status-pill--dark">Unknown</span>
                                     }
                                 </td>
+                                @if (Model.ShowCustomsPaymentColumn)
+                                {
+                                    <td>
+                                        <div class="customs-payment-cell">
+                                            @if (t.CustomsPaymentStatus is null)
+                                            {
+                                                <span class="status-pill customs-pill customs-pill--none">No payment</span>
+                                            }
+                                            else if (t.CustomsPaymentStatus == 0)
+                                            {
+                                                <span class="status-pill customs-pill customs-pill--draft">Draft</span>
+                                            }
+                                            else if (t.CustomsPaymentStatus == 1)
+                                            {
+                                                <span class="status-pill customs-pill customs-pill--calculated">Calculated</span>
+                                            }
+                                            else if (t.CustomsPaymentStatus == 2)
+                                            {
+                                                <span class="status-pill customs-pill customs-pill--paid">Paid</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="status-pill status-pill--dark">Unknown</span>
+                                            }
 
+                                            @if (t.CustomsPaymentTotalAmount.HasValue)
+                                            {
+                                                <div class="customs-payment-amount">
+                                                    Total: @t.CustomsPaymentTotalAmount.Value.ToString("0.00") MDL
+                                                </div>
+                                            }
+                                        </div>
+                                    </td>
+                                }
                                 <td>
                                     <div class="docs-cell">
                                         <strong>@t.VerifiedDocuments / @t.DocumentsCount</strong>
@@ -725,5 +762,39 @@
         .btn-table-action {
             width: 100%;
         }
+    }
+
+    .customs-payment-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .customs-payment-amount {
+        font-size: 0.82rem;
+        color: #64748b;
+        font-weight: 700;
+        margin-top: 2px;
+    }
+
+    .customs-pill--none {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
+    .customs-pill--draft {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .customs-pill--calculated {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .customs-pill--paid {
+        background: #dcfce7;
+        color: #15803d;
     }
 </style>

@@ -61,22 +61,37 @@ public sealed class AuditHistoryModel : PageModel
         "DocumentRejected" => "Document rejected",
         "DocumentRegisteredOnChain" => "Registered on blockchain",
         "DocumentRegisterOnChainFailed" => "Blockchain registration failed",
+        "MarkedAsPaid" => "Marked as paid",
+        "Calculated" => "Calculated",
         _ => action
     };
 
-    public string GetActionCssClass(string action) => action switch
+    public string GetActionCssClass(string? action)
     {
-        "TransportDeleted" => "action-pill action-pill--danger",
-        "DocumentRejected" => "action-pill action-pill--danger",
-        "DocumentRegisterOnChainFailed" => "action-pill action-pill--danger",
-        "TransportCompleted" => "action-pill action-pill--success",
-        "DocumentValidated" => "action-pill action-pill--success",
-        "DocumentVerified" => "action-pill action-pill--success",
-        "DocumentRegisteredOnChain" => "action-pill action-pill--success",
-        "TransportCreated" => "action-pill action-pill--info",
-        "DocumentUploaded" => "action-pill action-pill--info",
-        _ => "action-pill"
-    };
+        return action switch
+        {
+            "TransportCreated" => "action-pill action-pill--info",
+            "TransportDeleted" => "action-pill action-pill--danger",
+            "TransportCompleted" => "action-pill action-pill--success",
+            "TransportReturnedToInProcess" => "action-pill action-pill--warning",
+
+            "DocumentUploaded" => "action-pill action-pill--info",
+            "DocumentVerified" => "action-pill action-pill--success",
+            "DocumentValidated" => "action-pill action-pill--success",
+            "DocumentRejected" => "action-pill action-pill--danger",
+            "DocumentRegisteredOnChain" => "action-pill action-pill--success",
+            "DocumentRegisterOnChainFailed" => "action-pill action-pill--danger",
+
+            "Calculated" => "action-pill action-pill--customs-calculated",
+            "MarkedAsPaid" => "action-pill action-pill--customs-paid",
+            "CustomsDeclarationGenerated" => "action-pill action-pill--success",
+
+
+            
+
+            _ => "action-pill"
+        };
+    }
 
     public string ShortenDetails(string? details, int maxLength = 90)
     {

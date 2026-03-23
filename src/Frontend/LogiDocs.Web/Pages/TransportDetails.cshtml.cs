@@ -32,7 +32,8 @@ public sealed class TransportDetailsModel : PageModel
 
     public List<TransportSegmentRow> Segments { get; set; } = new();
     public List<DocumentRow> Documents { get; set; } = new();
-    
+
+    public CustomsPaymentRow? CustomsPayment { get; set; }
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -58,16 +59,37 @@ public sealed class TransportDetailsModel : PageModel
     [BindProperty]
     public Guid GenerateCustomsDeclarationTransportId { get; set; }
 
+    [BindProperty]
+    public decimal CustomsValue { get; set; }
+
+    [BindProperty]
+    public decimal DutyRate { get; set; }
+
+    [BindProperty]
+    public decimal VatRate { get; set; }
+
+    [BindProperty]
+    public decimal OtherFees { get; set; }
+
+    [BindProperty]
+    public string? CustomsPaymentNotes { get; set; }
+
+    [BindProperty]
+    public string? PaymentReference { get; set; }
+
+    [BindProperty]
+    public string? MarkPaidNotes { get; set; }
+
     public DocumentVerificationDto? VerificationResult { get; set; }
 
     public bool CanUpload =>
-    User.IsInRole(Roles.Shipper) ||
-    User.IsInRole(Roles.Carrier) ||
-    User.IsInRole(Roles.Administrator);
+        User.IsInRole(Roles.Shipper) ||
+        User.IsInRole(Roles.Carrier) ||
+        User.IsInRole(Roles.Administrator);
 
     public bool CanUploadCmr =>
-     User.IsInRole(Roles.Carrier) ||
-     User.IsInRole(Roles.Administrator);
+        User.IsInRole(Roles.Carrier) ||
+        User.IsInRole(Roles.Administrator);
 
     public bool CanUploadCommercialDocuments =>
         User.IsInRole(Roles.Shipper) ||
@@ -90,12 +112,23 @@ public sealed class TransportDetailsModel : PageModel
         User.IsInRole(Roles.CustomsAuthority) ||
         User.IsInRole(Roles.Administrator);
 
+    public bool CanViewCustomsPayment =>
+    User.IsInRole(Roles.CustomsBroker) ||
+    User.IsInRole(Roles.CustomsAuthority) ||
+    User.IsInRole(Roles.Administrator);
+
+    public bool CanManageCustomsPayment =>
+        User.IsInRole(Roles.CustomsBroker) ||
+        User.IsInRole(Roles.Administrator);
 
     public bool ShowGenerateCustomsDeclaration =>
-    CanGenerateCustomsDeclaration &&
-    Documents.Count > 0 &&
-    !IsTransportCompleted &&
-    !Documents.Any(x => x.Type == 4);
+        CanGenerateCustomsDeclaration &&
+        Documents.Count > 0 &&
+        !IsTransportCompleted &&
+        !Documents.Any(x => x.Type == 4);
+
+    public bool ShowCustomsPaymentSection =>
+        CanViewCustomsPayment && !IsTransportCompleted;
 
     public async Task OnGetAsync()
     {
@@ -227,7 +260,6 @@ public sealed class TransportDetailsModel : PageModel
 
             VerificationResult = result;
             await LoadTransportDataAsync();
-           
 
             SuccessMessage = "Document verification completed.";
             return Page();
@@ -313,6 +345,7 @@ public sealed class TransportDetailsModel : PageModel
             return Page();
         }
     }
+
     public async Task<IActionResult> OnGetDownloadAsync(Guid documentId)
     {
         if (documentId == Guid.Empty)
@@ -390,9 +423,103 @@ public sealed class TransportDetailsModel : PageModel
         }
     }
 
+    public async Task<IActionResult> OnPostCalculateCustomsPaymentAsync()
+    {
+        if (!CanManageCustomsPayment)
+            return Forbid();
+
+        if (Id == Guid.Empty)
+        {
+            Error = "Invalid transport.";
+            await LoadPageDataAsync();
+            return Page();
+        }
+
+        try
+        {
+            var client = _factory.CreateClient("LogiDocsApi");
+
+            var request = new CalculateCustomsPaymentRequestRow
+            {
+                CustomsValue = CustomsValue,
+                DutyRate = DutyRate,
+                VatRate = VatRate,
+                OtherFees = OtherFees,
+                Notes = CustomsPaymentNotes
+            };
+
+            var resp = await client.PutAsJsonAsync(
+                $"api/transports/{Id}/customs-payment/calculate",
+                request);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                Error = $"Customs payment calculation failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
+                await LoadPageDataAsync();
+                return Page();
+            }
+
+            SuccessMessage = "Customs payment calculated successfully.";
+            return RedirectToPage(new { id = Id });
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+            await LoadPageDataAsync();
+            return Page();
+        }
+    }
+
+    public async Task<IActionResult> OnPostMarkCustomsPaymentPaidAsync()
+    {
+        if (!CanManageCustomsPayment)
+            return Forbid();
+
+        if (Id == Guid.Empty)
+        {
+            Error = "Invalid transport.";
+            await LoadPageDataAsync();
+            return Page();
+        }
+
+        try
+        {
+            var client = _factory.CreateClient("LogiDocsApi");
+
+            var request = new MarkCustomsPaymentAsPaidRequestRow
+            {
+                PaymentReference = PaymentReference,
+                Notes = null
+            };
+
+            var resp = await client.PutAsJsonAsync(
+                $"api/transports/{Id}/customs-payment/mark-paid",
+                request);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                Error = $"Marking customs payment as paid failed: {(int)resp.StatusCode} {resp.ReasonPhrase}. {body}";
+                await LoadPageDataAsync();
+                return Page();
+            }
+
+            SuccessMessage = "Customs payment marked as paid successfully.";
+            return RedirectToPage(new { id = Id });
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+            await LoadPageDataAsync();
+            return Page();
+        }
+    }
+
     private async Task LoadPageDataAsync()
     {
         await LoadTransportDataAsync();
+        await LoadCustomsPaymentAsync();
         VerificationResult = null;
     }
 
@@ -416,7 +543,6 @@ public sealed class TransportDetailsModel : PageModel
 
             Segments = transport?.Segments ?? new List<TransportSegmentRow>();
 
-            // fallback pentru transporturile vechi sau pentru cele fără segmente încărcate
             if (Segments.Count == 0 && transport != null)
             {
                 Segments = new List<TransportSegmentRow>
@@ -443,6 +569,37 @@ public sealed class TransportDetailsModel : PageModel
         catch (Exception ex)
         {
             Error = ex.Message;
+        }
+    }
+
+    private async Task LoadCustomsPaymentAsync()
+    {
+        CustomsPayment = null;
+
+        if (Id == Guid.Empty)
+            return;
+
+        try
+        {
+            var client = _factory.CreateClient("LogiDocsApi");
+
+            var payment = await client.GetFromJsonAsync<CustomsPaymentRow?>(
+                $"api/transports/{Id}/customs-payment");
+
+            CustomsPayment = payment;
+
+            if (payment is not null)
+            {
+                CustomsValue = payment.CustomsValue;
+                DutyRate = payment.DutyRate;
+                VatRate = payment.VatRate;
+                OtherFees = payment.OtherFees;
+                CustomsPaymentNotes = payment.Notes;
+                PaymentReference = payment.PaymentReference;
+            }
+        }
+        catch
+        {
         }
     }
 
@@ -508,5 +665,54 @@ public sealed class TransportDetailsModel : PageModel
             3 => "Rejected",
             _ => "Unknown"
         };
+    }
+
+    public sealed class CustomsPaymentRow
+    {
+        public Guid Id { get; set; }
+        public Guid TransportId { get; set; }
+
+        public decimal CustomsValue { get; set; }
+        public decimal DutyRate { get; set; }
+        public decimal DutyAmount { get; set; }
+
+        public decimal VatRate { get; set; }
+        public decimal VatAmount { get; set; }
+
+        public decimal OtherFees { get; set; }
+        public decimal TotalAmount { get; set; }
+
+        public int Status { get; set; }
+
+        public string? PaymentReference { get; set; }
+        public string? Notes { get; set; }
+
+        public DateTime? CalculatedAtUtc { get; set; }
+        public DateTime? PaidAtUtc { get; set; }
+
+        public Guid CreatedByUserId { get; set; }
+
+        public string StatusName => Status switch
+        {
+            0 => "Draft",
+            1 => "Calculated",
+            2 => "Paid",
+            _ => "Unknown"
+        };
+    }
+
+    public sealed class CalculateCustomsPaymentRequestRow
+    {
+        public decimal CustomsValue { get; set; }
+        public decimal DutyRate { get; set; }
+        public decimal VatRate { get; set; }
+        public decimal OtherFees { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    public sealed class MarkCustomsPaymentAsPaidRequestRow
+    {
+        public string? PaymentReference { get; set; }
+        public string? Notes { get; set; }
     }
 }

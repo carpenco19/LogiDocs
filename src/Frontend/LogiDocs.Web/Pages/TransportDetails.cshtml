@@ -660,6 +660,7 @@
                                                 </button>
                                             </form>
                                         }
+
                                     </div>
                                 </td>
                             </tr>
@@ -668,7 +669,159 @@
                 </table>
             </div>
         }
-    </section>
+        @if (Model.ShowCustomsPaymentSection)
+        {
+            <section class="details-card details-card--customs mt-4">
+                <div class="details-card-header">
+                    <div>
+                        <h5 class="mb-1">Customs Payment</h5>
+                        <p class="text-muted mb-0">Calculate customs charges and confirm payment for the current transport</p>
+                    </div>
+
+                    @if (Model.CustomsPayment is not null)
+                    {
+                        <div class="table-counter customs-status-badge @(Model.CustomsPayment.Status == 2 ? "customs-status-badge--paid" : Model.CustomsPayment.Status == 1 ? "customs-status-badge--calculated" : "customs-status-badge--draft")">
+                            @Model.CustomsPayment.StatusName
+                        </div>
+                    }
+                </div>
+
+                @if (Model.CustomsPayment is null)
+                {
+                    <div class="customs-empty-state mt-4">
+                        No customs payment has been calculated for this transport yet.
+                    </div>
+                }
+                else
+                {
+                    <div class="customs-summary-grid mt-4">
+                        <div class="customs-summary-card">
+                            <span class="customs-summary-label">Duty amount</span>
+                            <strong class="customs-summary-value">@Model.CustomsPayment.DutyAmount.ToString("0.00")</strong>
+                        </div>
+
+                        <div class="customs-summary-card">
+                            <span class="customs-summary-label">VAT amount</span>
+                            <strong class="customs-summary-value">@Model.CustomsPayment.VatAmount.ToString("0.00")</strong>
+                        </div>
+
+                        <div class="customs-summary-card">
+                            <span class="customs-summary-label">Other fees</span>
+                            <strong class="customs-summary-value">@Model.CustomsPayment.OtherFees.ToString("0.00")</strong>
+                        </div>
+
+                        <div class="customs-summary-card customs-summary-card--highlight">
+                            <span class="customs-summary-label">Total amount</span>
+                            <strong class="customs-summary-value">@Model.CustomsPayment.TotalAmount.ToString("0.00") MDL</strong>
+                        </div>
+
+                        <div class="customs-summary-card">
+                            <span class="customs-summary-label">Calculated at</span>
+                            <strong class="customs-summary-value">
+                                @(Model.CustomsPayment.CalculatedAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-")
+                            </strong>
+                        </div>
+
+                        <div class="customs-summary-card">
+                            <span class="customs-summary-label">Paid at</span>
+                            <strong class="customs-summary-value">
+                                @(Model.CustomsPayment.PaidAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-")
+                            </strong>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.CustomsPayment.PaymentReference))
+                    {
+                        <div class="customs-reference-box mt-3">
+                            <span class="customs-summary-label">Payment reference</span>
+                            <strong class="customs-summary-value">@Model.CustomsPayment.PaymentReference</strong>
+                        </div>
+                    }
+                    @if (Model.CustomsPayment.Status == 2)
+                    {
+                        <div class="customs-success-state mt-3">
+                            <div class="customs-success-state__icon">✓</div>
+                            <div>
+                                <div class="customs-success-state__title">Customs payment confirmed</div>
+                                <div class="customs-success-state__text">
+                                    The customs payment was marked as paid successfully and is now locked for further confirmation actions.
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+
+                @if (Model.CustomsPayment is null || Model.CustomsPayment.Status != 2)
+                {
+                    <div class="customs-section-divider"></div>
+
+                    <div class="customs-form-section">
+                        <h6 class="customs-section-title">Calculation input</h6>
+
+                        <form method="post" asp-page-handler="CalculateCustomsPayment">
+                            <div class="row g-3">
+                                <div class="col-lg-3 col-md-6">
+                                    <label asp-for="CustomsValue" class="form-label-modern">Customs value</label>
+                                    <input asp-for="CustomsValue" class="form-control form-control-modern customs-number-input" type="number" step="0.01" min="0" />
+                                </div>
+
+                                <div class="col-lg-3 col-md-6">
+                                    <label asp-for="DutyRate" class="form-label-modern">Duty rate (%)</label>
+                                    <input asp-for="DutyRate" class="form-control form-control-modern customs-number-input" type="number" step="0.01" min="0" />
+                                    <small class="customs-help-text">Example: 12 for 12%</small>
+                                </div>
+
+                                <div class="col-lg-3 col-md-6">
+                                    <label asp-for="VatRate" class="form-label-modern">VAT rate (%)</label>
+                                    <input asp-for="VatRate" class="form-control form-control-modern customs-number-input" type="number" step="0.01" min="0" />
+                                    <small class="customs-help-text">Example: 20 for 20%</small>
+                                </div>
+
+                                <div class="col-lg-3 col-md-6">
+                                    <label asp-for="OtherFees" class="form-label-modern">Other fees</label>
+                                    <input asp-for="OtherFees" class="form-control form-control-modern customs-number-input" type="number" step="0.01" min="0" />
+                                </div>
+
+                                <div class="col-12">
+                                    <label asp-for="CustomsPaymentNotes" class="form-label-modern">Notes</label>
+                                    <textarea asp-for="CustomsPaymentNotes" class="form-control form-control-modern customs-textarea" rows="3"></textarea>
+                                </div>
+
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary btn-action-modern customs-primary-btn">
+                                        Calculate customs payment
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                }
+
+                @if (Model.CustomsPayment is not null && Model.CustomsPayment.Status != 2)
+                {
+                    <div class="customs-section-divider"></div>
+
+                    <div class="customs-form-section">
+                        <h6 class="customs-section-title">Payment confirmation</h6>
+
+                        <form method="post" asp-page-handler="MarkCustomsPaymentPaid">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-lg-8 col-md-7">
+                                    <label asp-for="PaymentReference" class="form-label-modern">Payment reference</label>
+                                    <input asp-for="PaymentReference" class="form-control form-control-modern" />
+                                </div>
+
+                                <div class="col-lg-4 col-md-5">
+                                    <button type="submit" class="btn btn-success btn-action-modern w-100">
+                                        Mark as paid
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                }
+            </section>
+        }
 </div>
 
 <style>
@@ -1389,6 +1542,193 @@
         justify-content: center;
     }
 
+    .details-card--customs {
+        background: linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,251,255,0.96) 100%);
+    }
+
+    .customs-empty-state {
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: #e6f6fb;
+        color: #0f5f73;
+        border: 1px solid #b6e3ef;
+        font-weight: 600;
+    }
+
+    .customs-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .customs-summary-card {
+        padding: 18px;
+        border-radius: 20px;
+        background: #f8fbff;
+        border: 1px solid #e2e8f0;
+    }
+
+    .customs-summary-card--highlight {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.08);
+    }
+
+        .customs-summary-card--highlight .customs-summary-value {
+            font-size: 1.3rem;
+            color: #1d4ed8;
+        }
+
+
+    .customs-status-badge {
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-weight: 800;
+        font-size: 0.9rem;
+    }
+
+    .customs-status-badge--draft {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .customs-status-badge--calculated {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .customs-status-badge--paid {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .customs-summary-label {
+        display: block;
+        color: #64748b;
+        font-size: 0.88rem;
+        margin-bottom: 8px;
+    }
+
+    .customs-summary-value {
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 800;
+        line-height: 1.4;
+    }
+
+    .customs-reference-box {
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+    }
+
+    .customs-success-state {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: #ecfdf5;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+    }
+
+    .customs-success-state__icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        background: #16a34a;
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+
+    .customs-success-state__title {
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+
+    .customs-success-state__text {
+        color: #166534;
+        line-height: 1.5;
+    }
+    .customs-section-divider {
+        height: 1px;
+        background: #e2e8f0;
+        margin: 24px 0;
+    }
+
+    .customs-form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .customs-section-title {
+        margin: 0 0 6px 0;
+        color: #0f172a;
+        font-weight: 800;
+        font-size: 1rem;
+    }
+
+    .customs-help-text {
+        display: block;
+        margin-top: 6px;
+        color: #64748b;
+        font-size: 0.8rem;
+    }
+
+    .customs-textarea {
+        min-height: 110px;
+        resize: vertical;
+    }
+
+    .customs-primary-btn {
+        min-width: 240px;
+    }
+
+    .customs-number-input::-webkit-outer-spin-button,
+    .customs-number-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .customs-number-input {
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        overflow-y: hidden;
+        width: 100%;
+    }
+
+    .modern-table {
+        min-width: 1200px;
+    }
+
+    @@media (max-width: 991.98px) {
+        .customs-summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .customs-summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .customs-primary-btn {
+            width: 100%;
+            min-width: auto;
+        }
+    }
+
     @@media (max-width: 991.98px) {
         .details-hero__content {
             grid-template-columns: 1fr;
@@ -1573,10 +1913,49 @@
         .blockchain-status-stack .status-pill {
             width: fit-content;
         }
-
         
 
-       
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+    
+
+    .customs-primary-btn {
+        width: 100%;
+        min-width: auto;
+    }
+
+            .customs-summary-card--highlight .customs-summary-value {
+                font-size: 1.3rem;
+                color: #1d4ed8;
+            }
+
+            .customs-form-section {
+                display: flex;
+                flex-direction: column;
+                gap: 18px;
+            }
+
+            .customs-section-title {
+                margin: 0 0 6px 0;
+                color: #0f172a;
+                font-weight: 800;
+                font-size: 1rem;
+            }
+    }
+
+    .customs-form-section .btn-action-modern {
+        min-height: 48px;
+    }
+
     }
 </style>
 <script>

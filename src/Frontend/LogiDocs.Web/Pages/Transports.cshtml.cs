@@ -19,6 +19,10 @@ public sealed class TransportsModel : PageModel
     public string? Success { get; set; }
 
     public List<TransportRow> Items { get; set; } = new();
+    public bool ShowCustomsPaymentColumn =>
+    User.IsInRole("Administrator") ||
+    User.IsInRole("CustomsAuthority") ||
+    User.IsInRole("CustomsBroker");
 
     public async Task OnGetAsync()
     {
@@ -77,6 +81,30 @@ public sealed class TransportsModel : PageModel
             var result = await client.GetFromJsonAsync<List<TransportRow>>("api/transports");
 
             Items = result ?? new List<TransportRow>();
+
+            foreach (var transport in Items)
+            {
+                try
+                {
+                    var payment = await client.GetFromJsonAsync<CustomsPaymentRow?>(
+                        $"api/transports/{transport.Id}/customs-payment");
+
+                    if (payment is null)
+                    {
+                        transport.CustomsPaymentStatus = null;
+                        transport.CustomsPaymentTotalAmount = null;
+                        continue;
+                    }
+
+                    transport.CustomsPaymentStatus = payment.Status;
+                    transport.CustomsPaymentTotalAmount = payment.TotalAmount;
+                }
+                catch
+                {
+                    transport.CustomsPaymentStatus = null;
+                    transport.CustomsPaymentTotalAmount = null;
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -99,6 +127,9 @@ public sealed class TransportsModel : PageModel
         public bool IsMultimodal { get; set; }
         public string? ModesSummary { get; set; }
 
+        public int? CustomsPaymentStatus { get; set; }
+        public decimal? CustomsPaymentTotalAmount { get; set; }
+
         public List<TransportSegmentRow> Segments { get; set; } = new();
 
         public string StatusName => Status switch
@@ -107,6 +138,15 @@ public sealed class TransportsModel : PageModel
             1 => "In Process",
             2 => "Completed",
             3 => "Cancelled",
+            _ => "Unknown"
+        };
+
+        public string CustomsPaymentStatusName => CustomsPaymentStatus switch
+        {
+            null => "No payment",
+            0 => "Draft",
+            1 => "Calculated",
+            2 => "Paid",
             _ => "Unknown"
         };
     }
@@ -120,5 +160,31 @@ public sealed class TransportsModel : PageModel
         public string Origin { get; set; } = string.Empty;
         public string Destination { get; set; } = string.Empty;
         public string? OperatorName { get; set; }
+    }
+
+    public sealed class CustomsPaymentRow
+    {
+        public Guid Id { get; set; }
+        public Guid TransportId { get; set; }
+
+        public decimal CustomsValue { get; set; }
+        public decimal DutyRate { get; set; }
+        public decimal DutyAmount { get; set; }
+
+        public decimal VatRate { get; set; }
+        public decimal VatAmount { get; set; }
+
+        public decimal OtherFees { get; set; }
+        public decimal TotalAmount { get; set; }
+
+        public int Status { get; set; }
+
+        public string? PaymentReference { get; set; }
+        public string? Notes { get; set; }
+
+        public DateTime? CalculatedAtUtc { get; set; }
+        public DateTime? PaidAtUtc { get; set; }
+
+        public Guid CreatedByUserId { get; set; }
     }
 }

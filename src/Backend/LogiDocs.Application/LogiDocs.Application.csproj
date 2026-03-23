@@ -1,13 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <Compile Remove="Auth\**" />
+    <Compile Remove="Customs\**" />
+    <EmbeddedResource Remove="Auth\**" />
+    <EmbeddedResource Remove="Customs\**" />
+    <None Remove="Auth\**" />
+    <None Remove="Customs\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\LogiDocs.Domain\LogiDocs.Domain.csproj" />
     <ProjectReference Include="..\..\shared\LogiDocs.Contracts\LogiDocs.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Customs\" />
-    <Folder Include="Auth\" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
   </ItemGroup>
 
   <PropertyGroup>

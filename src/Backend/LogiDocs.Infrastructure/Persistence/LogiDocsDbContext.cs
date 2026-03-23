@@ -13,6 +13,7 @@ public sealed class LogiDocsDbContext : DbContext, ILogiDocsDbContext
     public IQueryable<Transport> Transports => Set<Transport>();
     public IQueryable<Document> Documents => Set<Document>();
     public IQueryable<AuditEntry> AuditEntries => Set<AuditEntry>();
+    public IQueryable<CustomsPayment> CustomsPayments => Set<CustomsPayment>();
 
     public void Add<T>(T entity) where T : class
     {
@@ -49,6 +50,11 @@ public sealed class LogiDocsDbContext : DbContext, ILogiDocsDbContext
             e.HasMany(x => x.Segments)
                 .WithOne(s => s.Transport!)
                 .HasForeignKey(s => s.TransportId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(x => x.CustomsPayment)
+                .WithOne(x => x.Transport!)
+                .HasForeignKey<CustomsPayment>(x => x.TransportId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -95,6 +101,57 @@ public sealed class LogiDocsDbContext : DbContext, ILogiDocsDbContext
             e.Property(x => x.UploadedByUserId).IsRequired();
 
             e.HasIndex(x => new { x.TransportId, x.Type });
+        });
+
+        modelBuilder.Entity<CustomsPayment>(e =>
+        {
+            e.ToTable("CustomsPayments");
+            e.HasKey(x => x.Id);
+
+            e.Property(x => x.CustomsValue)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+            e.Property(x => x.DutyRate)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+            e.Property(x => x.DutyAmount)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+            e.Property(x => x.VatRate)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+            e.Property(x => x.VatAmount)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+            e.Property(x => x.OtherFees)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+            e.Property(x => x.TotalAmount)
+                .HasColumnType("decimal(18,2)")
+                .IsRequired();
+
+            e.Property(x => x.Status).IsRequired();
+
+            e.Property(x => x.PaymentReference)
+                .HasMaxLength(128);
+
+            e.Property(x => x.Notes)
+                .HasMaxLength(1000);
+
+            e.Property(x => x.CalculatedAtUtc);
+            e.Property(x => x.PaidAtUtc);
+
+            e.Property(x => x.CreatedByUserId)
+                .IsRequired();
+
+            e.HasIndex(x => x.TransportId)
+                .IsUnique();
         });
         modelBuilder.Entity<AuditEntry>(e =>
         {

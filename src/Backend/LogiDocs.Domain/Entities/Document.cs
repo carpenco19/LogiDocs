@@ -14,18 +14,18 @@ public sealed class Document
 
     
     public string OriginalFileName { get; set; } = string.Empty;
-    public string StoredFileName { get; set; } = string.Empty; // nume intern pe disc
-    public string StoredRelativePath { get; set; } = string.Empty; // ex: "transports/{id}/..."
+    public string StoredFileName { get; set; } = string.Empty; 
+    public string StoredRelativePath { get; set; } = string.Empty;
 
     // integritate
     public string Sha256 { get; set; } = string.Empty;
-    public string? BlockchainTxId { get; set; } // tx pe Solana (mai târziu)
+    public string? BlockchainTxId { get; set; }
 
     public string? BlockchainProofAddress { get; set; }
 
-    public DateTime? RegisteredOnChainAtUtc { get; set; } // când a fost confirmată pe chain
+    public DateTime? RegisteredOnChainAtUtc { get; set; } 
     public BlockchainRegistrationStatus? ChainStatus { get; set; }           // "Pending", "Registered", "Failed"
-    public string? ChainError { get; set; }               // mesaj dacă tranzacția a eșuat
+    public string? ChainError { get; set; }              
 
 
 

@@ -3,6 +3,8 @@ using System.Text;
 using LogiDocs.Api.Security;
 using LogiDocs.Application.Abstractions;
 using LogiDocs.Application.Audit.Queries;
+using LogiDocs.Application.CustomsPayments.Commands;
+using LogiDocs.Application.CustomsPayments.Queries;
 using LogiDocs.Application.Documents.Commands;
 using LogiDocs.Application.Documents.Queries;
 using LogiDocs.Application.Transports.Commands;
@@ -125,6 +127,10 @@ builder.Services.AddScoped<VerifyDocumentUseCase>();
 builder.Services.AddScoped<GetAuditEntriesUseCase>();
 
 builder.Services.AddScoped<GenerateCustomsDeclarationUseCase>();
+
+builder.Services.AddScoped<GetCustomsPaymentByTransportUseCase>();
+builder.Services.AddScoped<CalculateCustomsPaymentUseCase>();
+builder.Services.AddScoped<MarkCustomsPaymentAsPaidUseCase>();
 
 // ---------------- INFRASTRUCTURE ----------------
 
